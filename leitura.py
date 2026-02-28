@@ -1,17 +1,16 @@
 import csv
 import time
 from datetime import datetime
-import escrita
-
-lista_cpu = []
 
 arquivo_csv = "tratamento.csv"
 
 while True:
         soma_cpu = 0
         contador = 0
+        coluna_timestamp = 0
+        coluna_disco_used = 7
 
-        with open('monitoramento.csv', newline='') as file:
+        with open('monitoramento.csv', mode= "r") as file:
             leitura = csv.reader(file, delimiter=';', quotechar='|')
             next(leitura)
 
@@ -22,19 +21,28 @@ while True:
                       continue
                     soma_cpu += valor_cpu
                     contador += 1
-                elif len(linha) > 2:
-                    valor_memoria_avaliable = float(linha[2])
-                    if valor_memoria_avaliable == 0:
-                      continue
-                elif len(linha) > 3:
-                    valor_memoria_used = float(linha[3])
-                    if valor_memoria_used == 0:
-                      continue
                     print("Ta dando certo ler")
-            
-        
+                if len(linha) > 2:
+                    valor_memoria_total = float(linha[2])
+                if len(linha) > 3:
+                    valor_memoria_avaliable = float(linha[3])
+                if len(linha) > 4:
+                    valor_memoria_used = float(linha[4])
+                if len(linha) > 5:
+                    valor_memoria_free = float(linha[5])
+                if len(linha) > 6:
+                    valor_disco_total = float(linha[6])
+                if len(linha) > 7:
+                    valor_disco_used = float(linha[7])
+                if len(linha) > 7:
+                    valor_disco_free = float(linha[8])
+
             media_cpu = soma_cpu / contador
-            memoria_disponivel = valor_memoria_avaliable / escrita.memoria_total_gb * 100
+            porcento_memoria_used = (valor_memoria_used / valor_memoria_total) * 100
+            porcento_memoria_available = (valor_memoria_avaliable / valor_memoria_total) * 100
+            porcento_memoria_free = (valor_memoria_free / valor_memoria_total) * 100
+            porcento_disco_free =  (valor_disco_free/ valor_disco_total) * 100
+    
             time.sleep(2)
 
         with open(arquivo_csv, mode="a",encoding="utf-8") as file:
@@ -42,8 +50,10 @@ while True:
 
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             media_cpu
-            memoria_disponivel
+            porcento_memoria_used
+            porcento_memoria_available
+            porcento_memoria_free
 
-            escrever.writerow([timestamp ,round(media_cpu, 2), round(memoria_disponivel)])
+            escrever.writerow([timestamp ,round(media_cpu, 2), round(porcento_memoria_used, 2), round(porcento_memoria_available, 2), round(porcento_memoria_free, 2), round(porcento_disco_free, 2)])
 
             print("Ta dando certo escrever")
