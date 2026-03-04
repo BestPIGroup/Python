@@ -6,7 +6,7 @@ from datetime import datetime
 def conversao_gb(valor: float):
     return valor/ (1024 ** 3)
 
-nome = "Matheus"
+nome = "isa"
 
 arquivo_csv = "monitoramento.csv"
 
