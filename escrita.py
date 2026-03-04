@@ -11,7 +11,7 @@ nome = "isa"
 arquivo_csv = "monitoramento.csv"
 
 with open(arquivo_csv, mode="w",  newline='', encoding="utf-8") as file:
-    writer = csv.writer(file)
+    writer = csv.writer(file, delimiter=";")
     writer.writerow(["Nome", " Data", " CPU(%)", " Mémoria-total", " Mémoria-livre", " Mémoria-used", " Mémoria-free", " Mémoria(%)", " Disco-total", " Disco-used", " Disco-free", " Disco(%)"])
 
 for i in range (1, 41):
