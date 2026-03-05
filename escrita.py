@@ -35,6 +35,15 @@ for i in range (1, 41):
         writer = csv.writer(file, delimiter=";")
         writer.writerow([nome, timestamp, cpu, round(memoria_total_gb, 2), round(memoria_available_gb, 2), round(memoria_used_gb, 2), round(memoria_free_gb, 2), memoria_percent, round(disco_total_gb, 2), round(disco_used_gb, 2), round(disco_free_gb, 2), disco_percent])
 
-    print(f"Nome: {nome} | Data: {timestamp} - CPU: {cpu}% | Mem: {memoria_percent}% | Disk: {disco_percent}%")
+    print(f"""-----------------------------------------------------------
+            Data e horario leitura: {timestamp}
+            Uso de CPU sendo utilizada(%):{cpu}%
+            RAM total do seu servidor: {round(memoria_total_gb)} GB
+            RAM utilizada atualmente: {round(memoria_used_gb)} GB
+            Uso de RAM sendo utilizada(%): {round(memoria_percent)}%
+            Disco total do seu servidor: {round(disco_total_gb)} GB
+            Disco sendo utilizado atualmente: {round(disco_used_gb)} GB
+            Uso do disco sendo utilizada(%): {round(disco_percent)}%
+-----------------------------------------------------------""")
 
     time.sleep(5)
