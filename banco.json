@@ -1,32 +1,96 @@
 {
-    "componentes": [
-        {
-    "nome": "cpu_percent",
-    "tipo": "cpu",
-    "unidade_medida": "porcentagem",
-    "biblioteca": "psutil",
-    "parametros": {
+  "componentes": [
+    {
+      "nome": "cpu_percent",
+      "tipo": "cpu",
+      "unidade_medida": "porcentagem",
+      "biblioteca": "psutil",
+      "parametros": {
         "interval": 1
       },
-    "servidor_id_servidor": 1
-},
-{
-    "nome": "disk_usage",
-    "tipo": "disco",
-    "unidade_medida": "",
-    "biblioteca": "psutil",
-    "parametros": {
+      "servidor_id_servidor": 1
+    },
+
+    {
+      "nome": "virtual_memory_total_gb",
+      "tipo": "RAM",
+      "unidade_medida": "GB",
+      "biblioteca": "psutil",
+      "parametros": {},
+      "servidor_id_servidor": 1
+    },
+    {
+      "nome": "virtual_memory_available_gb",
+      "tipo": "RAM",
+      "unidade_medida": "GB",
+      "biblioteca": "psutil",
+      "parametros": {},
+      "servidor_id_servidor": 1
+    },
+    {
+      "nome": "virtual_memory_used_gb",
+      "tipo": "RAM",
+      "unidade_medida": "GB",
+      "biblioteca": "psutil",
+      "parametros": {},
+      "servidor_id_servidor": 1
+    },
+    {
+      "nome": "virtual_memory_free_gb",
+      "tipo": "RAM",
+      "unidade_medida": "GB",
+      "biblioteca": "psutil",
+      "parametros": {},
+      "servidor_id_servidor": 1
+    },
+    {
+      "nome": "virtual_memory_percent",
+      "tipo": "RAM",
+      "unidade_medida": "porcentagem",
+      "biblioteca": "psutil",
+      "parametros": {},
+      "servidor_id_servidor": 1
+    },
+
+    {
+      "nome": "disk_total_gb",
+      "tipo": "disco",
+      "unidade_medida": "GB",
+      "biblioteca": "psutil",
+      "parametros": {
         "path": "/"
       },
-    "servidor_id_servidor": 2
-},
-{
-    "nome": "virtual_memory",
-    "tipo": "RAM",
-    "unidade_medida": "",
-    "biblioteca": "psutil",
-    "parametros": {},
-    "servidor_id_servidor": 3
-}
-    ]
+      "servidor_id_servidor": 1
+    },
+    {
+      "nome": "disk_used_gb",
+      "tipo": "disco",
+      "unidade_medida": "GB",
+      "biblioteca": "psutil",
+      "parametros": {
+        "path": "/"
+      },
+      "servidor_id_servidor": 1
+    },
+    {
+      "nome": "disk_free_gb",
+      "tipo": "disco",
+      "unidade_medida": "GB",
+      "biblioteca": "psutil",
+      "parametros": {
+        "path": "/"
+      },
+      "servidor_id_servidor": 1
+    },
+    {
+      "nome": "disk_percent",
+      "tipo": "disco",
+      "unidade_medida": "porcentagem",
+      "biblioteca": "psutil",
+      "parametros": {
+        "path": "/"
+      },
+      "servidor_id_servidor": 1
+    }
+  ]
 }

@@ -36,6 +36,7 @@ for i in range (1, 41):
         writer.writerow([nome, timestamp, cpu, round(memoria_total_gb, 2), round(memoria_available_gb, 2), round(memoria_used_gb, 2), round(memoria_free_gb, 2), memoria_percent, round(disco_total_gb, 2), round(disco_used_gb, 2), round(disco_free_gb, 2), disco_percent])
 
     print(f"""-----------------------------------------------------------
+            Nome do servidor: {nome}
             Data e horario leitura: {timestamp}
             Uso de CPU sendo utilizada(%):{cpu}%
             RAM total do seu servidor: {round(memoria_total_gb)} GB
