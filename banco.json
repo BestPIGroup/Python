@@ -1,0 +1,32 @@
+{
+    "componentes": [
+        {
+    "nome": "cpu_percent",
+    "tipo": "cpu",
+    "unidade_medida": "porcentagem",
+    "biblioteca": "psutil",
+    "parametros": {
+        "interval": 1
+      },
+    "servidor_id_servidor": 1
+},
+{
+    "nome": "disk_usage",
+    "tipo": "disco",
+    "unidade_medida": "",
+    "biblioteca": "psutil",
+    "parametros": {
+        "path": "/"
+      },
+    "servidor_id_servidor": 2
+},
+{
+    "nome": "virtual_memory",
+    "tipo": "RAM",
+    "unidade_medida": "",
+    "biblioteca": "psutil",
+    "parametros": {},
+    "servidor_id_servidor": 3
+}
+    ]
+}
