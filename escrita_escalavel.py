@@ -353,13 +353,18 @@ resultados = {
 
 nome_servidor = "isa"
 
-arquivo_csv = "escalavel.csv"
+arquivo_csv = "escrita-escalavel.csv"
+
+lista_nomes =[]
+
+for componentes in dados["componentes"]:
+        lista_nomes.append(componentes["nome"])
 
 with open(arquivo_csv, mode="w",  newline='', encoding="utf-8") as file:
         writer = csv.writer(file, delimiter=";")
-        writer.writerow(["Nome", " Data", " CPU(%)", " Mémoria-total", " Mémoria-livre", " Mémoria-used", " Mémoria-free", " Mémoria(%)", " Disco-total", " Disco-used", " Disco-free", " Disco(%)"])
+        writer.writerow(["Nome", " Data", lista_nomes])
 
-for i in range(1, 41):
+for i in range(1, 41):    
 
     lista_componentes = []
 
