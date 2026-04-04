@@ -4,7 +4,7 @@ import csv
 import time
 from datetime import datetime
 
-with open("banco.json", "r", encoding="utf-8") as file:
+with open("Python/banco.json", "r", encoding="utf-8") as file:
     dados = json.load(file)
 
 def conversao_gb(valor: float):
@@ -351,9 +351,9 @@ resultados = {
 
 }
 
-nome_servidor = "isa"
+nome_servidor = "VICTOR"
 
-arquivo_csv = "escrita-escalavel.csv"
+arquivo_csv = "Python/escrita-escalavel.csv"
 
 lista_nomes =[]
 

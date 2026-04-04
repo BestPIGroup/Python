@@ -1,2 +1,5 @@
-Nome; Data;['cpu_percent', 'virtual_memory_total_gb', 'virtual_memory_available_gb', 'virtual_memory_used_gb', 'virtual_memory_free_gb', 'virtual_memory_percent', 'disk_total_gb', 'disk_used_gb', 'disk_free_gb', 'disk_percent']
-isa;2026-03-11 09:27:51;[8.2, 15.78, 4.75, 11.03, 4.75, 69.9, 476.22, 380.19, 96.04, 79.8]
+Nome; Data;['cpu_percent', 'cpu_time_user', 'cpu_ctx_switches', 'cpu_syscalls', 'net_packets_sent', 'net_bytes_sent_gb', 'net_packets_recv', 'net_dropout', 'net_errin', 'total_processos', 'total_conexoes', 'usuarios_logados', 'disk_write_count', 'disk_write_bytes_gb', 'disk_read_count']
+VICTOR;2026-04-03 23:46:37;[7.8, 45141.75, 838252036, 3670232591, 94440, 0.04, 408297, 0, 0, 312, 132, 1, 2847400, 74.38, 2338434]
+VICTOR;2026-04-03 23:46:43;[11.1, 45145.94, 838371116, 3670926640, 94536, 0.04, 408417, 0, 0, 314, 126, 1, 2847459, 74.38, 2338437]
+VICTOR;2026-04-03 23:46:49;[12.2, 45148.61, 838452810, 3671380958, 94553, 0.04, 408447, 0, 0, 313, 125, 1, 2847512, 74.38, 2338439]
+VICTOR;2026-04-03 23:46:55;[5.4, 45150.94, 838541804, 3671813865, 94583, 0.04, 408524, 0, 0, 313, 125, 1, 2847539, 74.38, 2338440]
