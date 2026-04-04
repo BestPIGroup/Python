@@ -1,4 +1,0 @@
-Nome; ID MAC; Data;['cpu_percent', 'cpu_time_user', 'cpu_ctx_switches', 'cpu_syscalls', 'net_packets_sent', 'net_bytes_sent', 'net_packets_recv', 'net_dropout', 'net_errin', 'total_processos', 'total_conexoes', 'usuarios_logados', 'disk_write_count', 'disk_write_bytes', 'disk_read_count']
-vmath;00:d7:6d:20:c0:88;2026-04-04 15:17:10;[4.9, 5488.2, 121099272, 634234299, 23177, 14893482, 59599, 0, 0, 289, 136, 1, 460792, 8847312384, 620059]
-vmath;00:d7:6d:20:c0:88;2026-04-04 15:17:16;[2.4, 5490.34, 121160978, 634433920, 23221, 14905041, 59655, 0, 0, 289, 131, 1, 460798, 8847345152, 620059]
-vmath;00:d7:6d:20:c0:88;2026-04-04 15:17:22;[2.7, 5493.58, 121252014, 634751946, 23337, 14942328, 59902, 0, 0, 289, 131, 1, 460854, 8848115200, 620086]
