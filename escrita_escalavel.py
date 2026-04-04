@@ -3,7 +3,7 @@ import json
 import csv
 import time
 from datetime import datetime
-from getmac import get_mac_adress
+from getmac import get_mac_address
 
 with open("Python/banco.json", "r", encoding="utf-8") as file:
     dados = json.load(file)
@@ -372,7 +372,7 @@ resultados = {
 
 nome_servidor = psutil.users()[0].name
 
-mac_servidor = get_mac_adress()
+mac_servidor = get_mac_address()
 
 arquivo_csv = "Python/escrita-escalavel.csv"
 
@@ -383,7 +383,7 @@ for componentes in dados["componentes"]:
 
 with open(arquivo_csv, mode="w",  newline='', encoding="utf-8") as file:
         writer = csv.writer(file, delimiter=";")
-        writer.writerow(["Nome", " Data", lista_nomes])
+        writer.writerow(["Nome", " ID MAC", " Data", lista_nomes])
 
 for i in range(1, 41):    
 
@@ -401,7 +401,7 @@ for i in range(1, 41):
 
     with open(arquivo_csv, mode="a",  newline='', encoding="utf-8") as file:
         writer = csv.writer(file, delimiter=";")
-        writer.writerow([nome_servidor, timestamp ,lista_componentes])
+        writer.writerow([nome_servidor, mac_servidor, timestamp ,lista_componentes])
 
     print(lista_componentes)
     time.sleep(5)
