@@ -3,6 +3,7 @@ import json
 import csv
 import time
 from datetime import datetime
+from getmac import get_mac_adress
 
 with open("Python/banco.json", "r", encoding="utf-8") as file:
     dados = json.load(file)
@@ -151,6 +152,10 @@ def coletar_disk_write_bytes_gb(parametros):
     disco = psutil.disk_io_counters()
     return round(conversao_gb(disco.write_bytes),2)
 
+def coletar_disk_write_bytes(parametros):
+    disco = psutil.disk_io_counters()
+    return disco.write_bytes
+
 def coletar_disk_read_time(parametros):
     disco = psutil.disk_io_counters()
     return round(disco.read_time,2)
@@ -163,9 +168,17 @@ def coletar_net_bytes_sent_gb(parametros):
     rede = psutil.net_io_counters()
     return round(conversao_gb(rede.bytes_sent),2)
 
+def coletar_net_bytes_sent(parametros):
+    rede = psutil.net_io_counters()
+    return rede.bytes_sent
+
 def coletar_net_bytes_recv_gb(parametros):
     rede = psutil.net_io_counters()
     return round(conversao_gb(rede.bytes_recv),2)
+
+def coletar_net_bytes_recv(parametros):
+    rede = psutil.net_io_counters()
+    return rede.bytes_recv
 
 def coletar_net_packets_sent(parametros):
     rede = psutil.net_io_counters()
@@ -266,10 +279,13 @@ coletores = {
 "disk_write_count": coletar_disk_write_count,
 "disk_read_bytes_gb": coletar_disk_read_bytes_gb,
 "disk_write_bytes_gb": coletar_disk_write_bytes_gb,
+"disk_write_bytes": coletar_disk_write_bytes,
 "disk_read_time": coletar_disk_read_time,
 "disk_write_time": coletar_disk_write_time,
 "net_bytes_sent_gb": coletar_net_bytes_sent_gb,
+"net_bytes_sent": coletar_net_bytes_sent,
 "net_bytes_recv_gb": coletar_net_bytes_recv_gb,
+"net_bytes_recv": coletar_net_bytes_recv,
 "net_packets_sent": coletar_net_packets_sent,
 "net_packets_recv": coletar_net_packets_recv,
 "net_errin": coletar_net_errin,
@@ -327,10 +343,13 @@ resultados = {
 "disk_write_count":"",
 "disk_read_bytes_gb":"",
 "disk_write_bytes_gb":"",
+"disk_write_bytes":"",
 "disk_read_time":"",
 "disk_write_time":"",
 "net_bytes_sent_gb":"",
+"net_bytes_sent":"",
 "net_bytes_recv_gb":"",
+"net_bytes_recv ":"",
 "net_packets_sent":"",
 "net_packets_recv":"",
 "net_errin":"",
@@ -351,7 +370,9 @@ resultados = {
 
 }
 
-nome_servidor = "VICTOR"
+nome_servidor = psutil.users()[0].name
+
+mac_servidor = get_mac_adress()
 
 arquivo_csv = "Python/escrita-escalavel.csv"
 
