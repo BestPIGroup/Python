@@ -12,50 +12,107 @@
     },
 
     {
-      "nome": "virtual_memory_total_gb",
-      "tipo": "RAM",
-      "unidade_medida": "GB",
-      "biblioteca": "psutil",
-      "parametros": {},
-      "servidor_id_servidor": 1
-    },
-    {
-      "nome": "virtual_memory_available_gb",
-      "tipo": "RAM",
-      "unidade_medida": "GB",
-      "biblioteca": "psutil",
-      "parametros": {},
-      "servidor_id_servidor": 1
-    },
-    {
-      "nome": "virtual_memory_used_gb",
-      "tipo": "RAM",
-      "unidade_medida": "GB",
-      "biblioteca": "psutil",
-      "parametros": {},
-      "servidor_id_servidor": 1
-    },
-    {
-      "nome": "virtual_memory_free_gb",
-      "tipo": "RAM",
-      "unidade_medida": "GB",
-      "biblioteca": "psutil",
-      "parametros": {},
-      "servidor_id_servidor": 1
-    },
-    {
-      "nome": "virtual_memory_percent",
-      "tipo": "RAM",
-      "unidade_medida": "porcentagem",
+      "nome": "cpu_time_user",
+      "tipo": "cpu",
+      "unidade_medida": "segundos",
       "biblioteca": "psutil",
       "parametros": {},
       "servidor_id_servidor": 1
     },
 
     {
-      "nome": "disk_total_gb",
+      "nome": "cpu_ctx_switches",
+      "tipo": "cpu",
+      "unidade_medida": "contagem",
+      "biblioteca": "psutil",
+      "parametros": {},
+      "servidor_id_servidor": 1
+    },
+
+    {
+      "nome": "cpu_syscalls",
+      "tipo": "cpu",
+      "unidade_medida": "contagem",
+      "biblioteca": "psutil",
+      "parametros": {},
+      "servidor_id_servidor": 1
+    },
+
+    {
+      "nome": "net_packets_sent",
+      "tipo": "net",
+      "unidade_medida": "contagem",
+      "biblioteca": "psutil",
+      "parametros": {},
+      "servidor_id_servidor": 1
+    },
+
+    {
+      "nome": "net_bytes_sent",
+      "tipo": "net",
+      "unidade_medida": "contagem",
+      "biblioteca": "psutil",
+      "parametros": {},
+      "servidor_id_servidor": 1
+    },
+
+    {
+      "nome": "net_packets_recv",
+      "tipo": "net",
+      "unidade_medida": "contagem",
+      "biblioteca": "psutil",
+      "parametros": {},
+      "servidor_id_servidor": 1
+    },
+
+    {
+      "nome": "net_dropout",
+      "tipo": "net",
+      "unidade_medida": "contagem",
+      "biblioteca": "psutil",
+      "parametros": {},
+      "servidor_id_servidor": 1
+    },
+
+    {
+      "nome": "net_errin",
+      "tipo": "net",
+      "unidade_medida": "contagem",
+      "biblioteca": "psutil",
+      "parametros": {},
+      "servidor_id_servidor": 1
+    },
+
+    {
+      "nome": "total_processos",
+      "tipo": "process",
+      "unidade_medida": "contagem",
+      "biblioteca": "psutil",
+      "parametros": {},
+      "servidor_id_servidor": 1
+    },
+
+    {
+      "nome": "total_conexoes",
+      "tipo": "net",
+      "unidade_medida": "contagem",
+      "biblioteca": "psutil",
+      "parametros": {},
+      "servidor_id_servidor": 1
+    },
+    {
+      "nome": "usuarios_logados",
+      "tipo": "user",
+      "unidade_medida": "contagem",
+      "biblioteca": "psutil",
+      "parametros": {},
+      "servidor_id_servidor": 1
+    },
+
+    {
+      "nome": "disk_write_count",
       "tipo": "disco",
-      "unidade_medida": "GB",
+      "unidade_medida": "contagem",
       "biblioteca": "psutil",
       "parametros": {
         "path": "/"
@@ -63,9 +120,9 @@
       "servidor_id_servidor": 1
     },
     {
-      "nome": "disk_used_gb",
+      "nome": "disk_write_bytes",
       "tipo": "disco",
-      "unidade_medida": "GB",
+      "unidade_medida": "contagem",
       "biblioteca": "psutil",
       "parametros": {
         "path": "/"
@@ -73,19 +130,9 @@
       "servidor_id_servidor": 1
     },
     {
-      "nome": "disk_free_gb",
+      "nome": "disk_read_count",
       "tipo": "disco",
-      "unidade_medida": "GB",
-      "biblioteca": "psutil",
-      "parametros": {
-        "path": "/"
-      },
-      "servidor_id_servidor": 1
-    },
-    {
-      "nome": "disk_percent",
-      "tipo": "disco",
-      "unidade_medida": "porcentagem",
+      "unidade_medida": "contagem",
       "biblioteca": "psutil",
       "parametros": {
         "path": "/"
