@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 from getmac import get_mac_address
 
-with open("Python/banco.json", "r", encoding="utf-8") as file:
+with open("banco.json", "r", encoding="utf-8") as file:
     dados = json.load(file)
 
 def conversao_gb(valor: float):
@@ -374,18 +374,21 @@ nome_servidor = psutil.users()[0].name
 
 mac_servidor = get_mac_address()
 
-arquivo_csv = "Python/escrita-escalavel.csv"
+arquivo_csv = "escrita-escalavel.csv"
 
 lista_nomes =[]
 
 for componentes in dados["componentes"]:
         lista_nomes.append(componentes["nome"])
 
+cabecalho=["user", "id_mac", "datetime"]
+cabecalho.extend(lista_nomes)
+
 with open(arquivo_csv, mode="w",  newline='', encoding="utf-8") as file:
         writer = csv.writer(file, delimiter=";")
-        writer.writerow(["Nome", " ID MAC", " Data", lista_nomes])
+        writer.writerow(cabecalho)
 
-for i in range(1, 41):    
+while True:    
 
     lista_componentes = []
 
@@ -399,9 +402,12 @@ for i in range(1, 41):
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    registro = [nome_servidor, mac_servidor, timestamp]
+    registro.extend(lista_componentes)
+
     with open(arquivo_csv, mode="a",  newline='', encoding="utf-8") as file:
         writer = csv.writer(file, delimiter=";")
-        writer.writerow([nome_servidor, mac_servidor, timestamp ,lista_componentes])
+        writer.writerow(lista_componentes)
 
     print(lista_componentes)
     time.sleep(5)
