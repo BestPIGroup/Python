@@ -322,9 +322,7 @@ resultados = {
 }
 
 nome_servidor = psutil.users()[0].name
-
 mac_servidor = get_mac_address()
-
 arquivo_csv = "escrita-escalavel.csv"
 
 lista_nomes =[]
