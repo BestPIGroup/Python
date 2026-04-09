@@ -2,6 +2,7 @@ import psutil
 import json
 import csv
 import time
+import boto3
 from datetime import datetime
 from getmac import get_mac_address
 
@@ -365,4 +366,7 @@ while True:
         writer.writerow(lista_componentes)
 
     print(lista_componentes)
+
+
+
     time.sleep(5)
