@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 from getmac import get_mac_address
 
-with open("banco.json", "r", encoding="utf-8") as file:
+with open("banco_escrita.json", "r", encoding="utf-8") as file:
     dados = json.load(file)
 
 def conversao_gb(valor: float):
@@ -163,6 +163,10 @@ def coletar_net_dropout(parametros):
     return round(rede.dropout,2)
 def coletar_total_processos(parametros):
     return round(len(psutil.pids()),2)
+def coletar_processo_max_cpu(parametros):
+    top_cpu = max(psutil.process_iter(['pid', 'name', 'cpu_percent']), 
+              key=lambda p: p.info['cpu_percent'])
+    return top_cpu.info['pid']
 def coletar_usuarios_logados(parametros):
     return round(len(psutil.users()),2)
 def coletar_boot_time(parametros):
@@ -242,6 +246,7 @@ coletores = {
 "net_dropin": coletar_net_dropin,
 "net_dropout": coletar_net_dropout,
 "total_processos": coletar_total_processos,
+"processo_max_cpu": coletar_processo_max_cpu,
 "usuarios_logados": coletar_usuarios_logados,
 "boot_time": coletar_boot_time,
 "uptime_segundos": coletar_uptime_segundos,
@@ -308,6 +313,7 @@ resultados = {
 "net_dropin":"",
 "net_dropout":"",
 "total_processos":"",
+"processo_max_cpu":"",
 "usuarios_logados":"",
 "boot_time":"",
 "uptime_segundos":"",

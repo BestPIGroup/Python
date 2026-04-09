@@ -26,6 +26,12 @@
       "biblioteca": "psutil",
       "parametros": {},
       "servidor_id_servidor": 1
+    },{"nome": "processo_max_cpu",
+      "tipo": "process",
+      "unidade_medida": "id",
+      "biblioteca": "psutil",
+      "parametros": {},
+      "servidor_id_servidor": 1
     },{"nome": "virtual_memory_total",
       "tipo": "ram",
       "unidade_medida": "contagem",

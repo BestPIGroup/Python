@@ -1,0 +1,4 @@
+user;id_mac;datetime;cpu_percent;cpu_time_user;cpu_ctx_switches;total_processos;processo_max_cpu;virtual_memory_total;virtual_memory_available;disk_read_count;disk_write_count;net_bytes_sent;net_bytes_recv;net_packets_sent;net_packets_recv;net_dropin;net_dropout;net_errin;net_errout;usuarios_logados
+11.4;46830.39;1021893180;292;0;16714698752;5518229504;1870091;2300807;22181336;192876555;53093;165057;0;0;0;0;1
+26.9;46833.2;1021964903;292;0;16714698752;5553217536;1870091;2300905;22192628;192883160;53125;165079;0;0;0;0;1
+13.2;46836.56;1022076237;292;0;16714698752;5557948416;1870091;2300919;22192703;192883246;53126;165080;0;0;0;0;1
