@@ -175,7 +175,7 @@ def coletar_processo_name_max_cpu(parametros):
 def coletar_processo_cpu_percent_max_cpu(parametros):
     top_cpu = max(psutil.process_iter(['pid', 'name', 'cpu_percent']), 
               key=lambda p: p.info['cpu_percent'])
-    return top_cpu.info['cpu_percent']
+    return (top_cpu.info['cpu_percent'])/(psutil.cpu_count())
 def coletar_usuarios_logados(parametros):
     return round(len(psutil.users()),2)
 def coletar_boot_time(parametros):
