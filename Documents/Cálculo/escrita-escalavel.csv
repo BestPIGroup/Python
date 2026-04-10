@@ -1,0 +1,3 @@
+user;id_mac;datetime;cpu_percent;cpu_time_user;cpu_ctx_switches;processo_pid_max_cpu;processo_name_max_cpu;processo_cpu_percent_max_cpu;total_processos;virtual_memory_total;virtual_memory_available;disk_read_count;disk_write_count;net_bytes_sent;net_bytes_recv;net_packets_sent;net_packets_recv;net_dropin;net_dropout;net_errin;net_errout;usuarios_logados
+6.6;23073.8;474167710;0;SystemIdleProcess;677.2;308;16714698752;4898836480;593898;600139;32626604;289646063;173975;268883;0;0;0;0;1
+6.6,23073.8,474167710,0,SystemIdleProcess,677.2,308,16714698752,4898836480,593898,600139,32626604,289646063,173975,268883,0,0,0,0,1
