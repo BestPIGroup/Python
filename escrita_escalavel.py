@@ -3,8 +3,19 @@ import json
 import csv
 import time
 import boto3
+import os
 from datetime import datetime
 from getmac import get_mac_address
+from dotenv import load_dotenv
+
+load_dotenv()
+
+client = boto3.client(
+    's3',
+    aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY"),
+    aws_session_token = os.getenv("AWS_SESSION_TOKEN")
+)
 
 with open("Python/banco_escrita.json", "r", encoding="utf-8") as file:
     dados = json.load(file)
@@ -342,43 +353,49 @@ resultados = {
 
 nome_servidor = psutil.users()[0].name
 mac_servidor = get_mac_address()
-arquivo_csv = "escrita-escalavel.csv"
+arquivo_csv = "escrita_escalavel.csv"
 
 lista_nomes =[]
 
-for componentes in dados["componentes"]:
-        lista_nomes.append(componentes["nome"])
-
-cabecalho=["user", "id_mac", "datetime"]
-cabecalho.extend(lista_nomes)
-
-with open(arquivo_csv, mode="w",  newline='', encoding="utf-8") as file:
-        writer = csv.writer(file, delimiter=";")
-        writer.writerow(cabecalho)
-
-while True:    
-
-    lista_componentes = []
-
+def escrita():
     for componentes in dados["componentes"]:
-        nome = componentes["nome"]
-        parametros = componentes["parametros"]
-        funcao = coletores.get(nome)
-        valor = funcao(parametros)
-        resultados[nome] = valor
-        lista_componentes.append(resultados[nome])
+            lista_nomes.append(componentes["nome"])
 
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cabecalho=["user", "id_mac", "datetime"]
+    cabecalho.extend(lista_nomes)
 
-    registro = [nome_servidor, mac_servidor, timestamp]
-    registro.extend(lista_componentes)
+    with open(arquivo_csv, mode="w",  newline='', encoding="utf-8") as file:
+            writer = csv.writer(file, delimiter=";")
+            writer.writerow(cabecalho)
 
-    with open(arquivo_csv, mode="a",  newline='', encoding="utf-8") as file:
-        writer = csv.writer(file, delimiter=";")
-        writer.writerow(registro)
+    for i in range(1, 12):    
 
-    print(registro)
+        lista_componentes = []
 
+        for componentes in dados["componentes"]:
+            nome = componentes["nome"]
+            parametros = componentes["parametros"]
+            funcao = coletores.get(nome)
+            valor = funcao(parametros)
+            resultados[nome] = valor
+            lista_componentes.append(resultados[nome])
 
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    time.sleep(5)
+        registro = [nome_servidor, mac_servidor, timestamp]
+        registro.extend(lista_componentes)
+
+        with open(arquivo_csv, mode="a",  newline='', encoding="utf-8") as file:
+            writer = csv.writer(file, delimiter=";")
+            writer.writerow(registro)
+
+        print(registro)
+
+        time.sleep(5)
+
+    client.upload_file(arquivo_csv, "s3-teste-python-2026.04.11","raw/dados_brutos.csv")
+
+    escrita()
+
+escrita()
+        
