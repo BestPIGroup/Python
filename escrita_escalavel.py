@@ -17,8 +17,6 @@ from dotenv import load_dotenv
 #     aws_session_token = os.getenv("AWS_SESSION_TOKEN")
 # )
 
-#teste
-
 with open("Python/banco_escrita.json", "r", encoding="utf-8") as file:
     dados = json.load(file)
 
@@ -393,7 +391,7 @@ resultados = {
 
 nome_servidor = psutil.users()[0].name
 mac_servidor = get_mac_address()
-arquivo_csv = "escrita_escalavel.csv"
+arquivo_csv = "Python/escrita_escalavel.csv"
 
 lista_nomes =[]
 
