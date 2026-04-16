@@ -3,14 +3,25 @@ import json
 import csv
 import time
 import boto3
+import os
 from datetime import datetime
 from getmac import get_mac_address
+from dotenv import load_dotenv
+
+# load_dotenv()
+
+# client = boto3.client(
+#     's3',
+#     aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID"),
+#     aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY"),
+#     aws_session_token = os.getenv("AWS_SESSION_TOKEN")
+# )
 
 with open("Python/banco_escrita.json", "r", encoding="utf-8") as file:
     dados = json.load(file)
 
 def conversao_gb(valor: float):
-    return valor/ (1024 ** 3)
+    return valor / (1024 ** 3)
 
 def coletar_cpu_percent(parametros):
     return round(psutil.cpu_percent(interval=1),2)
@@ -28,8 +39,11 @@ def coletar_cpu_freq_max(parametros):
     cpu = psutil.cpu_freq()
     return round(cpu.max,2)
 def coletar_cpu_ctx_switches(parametros):
-    stats = psutil.cpu_stats()
-    return round(stats.ctx_switches,2)
+    global ctx_switches_global
+    ctx_switches_local = psutil.cpu_stats().ctx_switches
+    resposta = ctx_switches_local - ctx_switches_global
+    ctx_switches_global = ctx_switches_local
+    return resposta
 def coletar_cpu_interrupts(parametros):
     stats = psutil.cpu_stats()
     return round(stats.interrupts,2)
@@ -120,12 +134,21 @@ def coletar_disk_write_count(parametros):
 def coletar_disk_read_bytes_gb(parametros):
     disco = psutil.disk_io_counters()
     return round(conversao_gb(disco.read_bytes),2)
+def coletar_disk_read_bytes(parametros):
+    global disk_read_bytes_global
+    disk_read_bytes_local = psutil.disk_io_counters().read_bytes
+    resposta = disk_read_bytes_local - disk_read_bytes_global
+    disk_read_bytes_global = disk_read_bytes_local
+    return resposta
 def coletar_disk_write_bytes_gb(parametros):
     disco = psutil.disk_io_counters()
     return round(conversao_gb(disco.write_bytes),2)
 def coletar_disk_write_bytes(parametros):
-    disco = psutil.disk_io_counters()
-    return disco.write_bytes
+    global disk_write_bytes_global
+    disk_write_bytes_local = psutil.disk_io_counters().write_bytes
+    resposta = disk_write_bytes_local - disk_write_bytes_global
+    disk_write_bytes_global = disk_write_bytes_local
+    return resposta
 def coletar_disk_read_time(parametros):
     disco = psutil.disk_io_counters()
     return disco.read_time
@@ -136,32 +159,56 @@ def coletar_net_bytes_sent_gb(parametros):
     rede = psutil.net_io_counters()
     return round(conversao_gb(rede.bytes_sent),2)
 def coletar_net_bytes_sent(parametros):
-    rede = psutil.net_io_counters()
-    return rede.bytes_sent
+    global net_bytes_sent_global
+    net_bytes_sent_local = psutil.net_io_counters().bytes_sent
+    resposta = net_bytes_sent_local - net_bytes_sent_global
+    net_bytes_sent_global = net_bytes_sent_local
+    return resposta
 def coletar_net_bytes_recv_gb(parametros):
     rede = psutil.net_io_counters()
     return round(conversao_gb(rede.bytes_recv),2)
 def coletar_net_bytes_recv(parametros):
-    rede = psutil.net_io_counters()
-    return rede.bytes_recv
+    global net_bytes_recv_global
+    net_bytes_recv_local = psutil.net_io_counters().bytes_recv
+    resposta = net_bytes_recv_local - net_bytes_recv_global
+    net_bytes_recv_global = net_bytes_recv_local
+    return resposta
 def coletar_net_packets_sent(parametros):
-    rede = psutil.net_io_counters()
-    return round(rede.packets_sent,2)
+    global net_packets_sent_global
+    net_packets_sent_local = psutil.net_io_counters().packets_sent
+    resposta = net_packets_sent_local - net_packets_sent_global
+    net_packets_sent_global = net_packets_sent_local
+    return resposta
 def coletar_net_packets_recv(parametros):
-    rede = psutil.net_io_counters()
-    return round(rede.packets_recv,2)
+    global net_packets_recv_global
+    net_packets_recv_local = psutil.net_io_counters().packets_recv
+    resposta = net_packets_recv_local - net_packets_recv_global
+    net_packets_recv_global = net_packets_recv_local
+    return resposta
 def coletar_net_errin(parametros):
-    rede = psutil.net_io_counters()
-    return round(rede.errin,2)
+    global net_errin_global
+    net_errin_local = psutil.net_io_counters().errin
+    resposta = net_errin_local - net_errin_global
+    net_errin_global = net_errin_local
+    return resposta
 def coletar_net_errout(parametros):
-    rede = psutil.net_io_counters()
-    return round(rede.errout,2)
+    global net_errout_global
+    net_errout_local = psutil.net_io_counters().errout
+    resposta = net_errout_local - net_errout_global
+    net_errout_global = net_errout_local
+    return resposta
 def coletar_net_dropin(parametros):
-    rede = psutil.net_io_counters()
-    return round(rede.dropin,2)
+    global net_dropin_global
+    net_dropin_local = psutil.net_io_counters().dropin
+    resposta = net_dropin_local - net_dropin_global
+    net_dropin_global = net_dropin_local
+    return resposta
 def coletar_net_dropout(parametros):
-    rede = psutil.net_io_counters()
-    return round(rede.dropout,2)
+    global net_dropout_global
+    net_dropout_local = psutil.net_io_counters().dropout
+    resposta = net_dropout_local - net_dropout_global
+    net_dropout_global = net_dropout_local
+    return resposta
 def coletar_total_processos(parametros):
     return round(len(psutil.pids()),2)
 def coletar_processo_pid_max_cpu(parametros):
@@ -240,6 +287,7 @@ coletores = {
 "disk_read_count": coletar_disk_read_count,
 "disk_write_count": coletar_disk_write_count,
 "disk_read_bytes_gb": coletar_disk_read_bytes_gb,
+"disk_read_bytes": coletar_disk_read_bytes,
 "disk_write_bytes_gb": coletar_disk_write_bytes_gb,
 "disk_write_bytes": coletar_disk_write_bytes,
 "disk_read_time": coletar_disk_read_time,
@@ -309,6 +357,7 @@ resultados = {
 "disk_read_count":"",
 "disk_write_count":"",
 "disk_read_bytes_gb":"",
+"disk_read_bytes":"",
 "disk_write_bytes_gb":"",
 "disk_write_bytes":"",
 "disk_read_time":"",
@@ -342,43 +391,62 @@ resultados = {
 
 nome_servidor = psutil.users()[0].name
 mac_servidor = get_mac_address()
-arquivo_csv = "escrita-escalavel.csv"
+arquivo_csv = "Python/escrita_escalavel.csv"
 
 lista_nomes =[]
 
-for componentes in dados["componentes"]:
-        lista_nomes.append(componentes["nome"])
-
-cabecalho=["user", "id_mac", "datetime"]
-cabecalho.extend(lista_nomes)
-
-with open(arquivo_csv, mode="w",  newline='', encoding="utf-8") as file:
-        writer = csv.writer(file, delimiter=";")
-        writer.writerow(cabecalho)
-
-while True:    
-
-    lista_componentes = []
+def escrita():
 
     for componentes in dados["componentes"]:
-        nome = componentes["nome"]
-        parametros = componentes["parametros"]
-        funcao = coletores.get(nome)
-        valor = funcao(parametros)
-        resultados[nome] = valor
-        lista_componentes.append(resultados[nome])
+            lista_nomes.append(componentes["nome"])
 
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cabecalho=["user", "id_mac", "timestamp"]
+    cabecalho.extend(lista_nomes)
 
-    registro = [nome_servidor, mac_servidor, timestamp]
-    registro.extend(lista_componentes)
+    with open(arquivo_csv, mode="w",  newline='', encoding="utf-8") as file:
+            writer = csv.writer(file, delimiter=";")
+            writer.writerow(cabecalho)
 
-    with open(arquivo_csv, mode="a",  newline='', encoding="utf-8") as file:
-        writer = csv.writer(file, delimiter=";")
-        writer.writerow(registro)
+    for i in range(1, 60):    
 
-    print(registro)
+        lista_componentes = []
 
+        for componentes in dados["componentes"]:
+            nome = componentes["nome"]
+            parametros = componentes["parametros"]
+            funcao = coletores.get(nome)
+            valor = funcao(parametros)
+            resultados[nome] = valor
+            lista_componentes.append(resultados[nome])
 
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    time.sleep(5)
+        registro = [nome_servidor, mac_servidor, timestamp]
+        registro.extend(lista_componentes)
+
+        with open(arquivo_csv, mode="a",  newline='', encoding="utf-8") as file:
+            writer = csv.writer(file, delimiter=";")
+            writer.writerow(registro)
+
+        print(registro)
+
+        time.sleep(5)
+
+    # client.upload_file(arquivo_csv, "s3-teste-python-2026.04.11","raw/dados_brutos.csv")
+
+    escrita()
+
+ctx_switches_global = psutil.cpu_stats().ctx_switches
+disk_read_bytes_global = psutil.disk_io_counters().read_bytes
+disk_write_bytes_global = psutil.disk_io_counters().write_bytes
+net_bytes_sent_global = psutil.net_io_counters().bytes_sent
+net_bytes_recv_global = psutil.net_io_counters().bytes_recv
+net_packets_sent_global = psutil.net_io_counters().packets_sent
+net_packets_recv_global = psutil.net_io_counters().packets_recv
+net_errin_global = psutil.net_io_counters().errin
+net_errout_global = psutil.net_io_counters().errout
+net_dropin_global = psutil.net_io_counters().dropin
+net_dropout_global = psutil.net_io_counters().dropout
+
+escrita()
+        
