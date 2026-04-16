@@ -56,17 +56,17 @@
       "biblioteca": "psutil",
       "parametros": {},
       "servidor_id_servidor": 1
-    },{"nome": "disk_read_count",
+    },{"nome": "disk_read_bytes",
       "tipo": "disco",
-      "unidade_medida": "contagem",
+      "unidade_medida": "bytes",
       "biblioteca": "psutil",
       "parametros": {
         "path": "/"
       },
       "servidor_id_servidor": 1
-    },{"nome": "disk_write_count",
+    },{"nome": "disk_write_bytes",
       "tipo": "disco",
-      "unidade_medida": "contagem",
+      "unidade_medida": "bytes",
       "biblioteca": "psutil",
       "parametros": {
         "path": "/"
@@ -96,18 +96,6 @@
       "biblioteca": "psutil",
       "parametros": {},
       "servidor_id_servidor": 1
-    },{"nome": "net_dropin",
-      "tipo": "net",
-      "unidade_medida": "contagem",
-      "biblioteca": "psutil",
-      "parametros": {},
-      "servidor_id_servidor": 1
-    },{"nome": "net_dropout",
-      "tipo": "net",
-      "unidade_medida": "contagem",
-      "biblioteca": "psutil",
-      "parametros": {},
-      "servidor_id_servidor": 1
     },{"nome": "net_errin",
       "tipo": "net",
       "unidade_medida": "contagem",
@@ -115,6 +103,18 @@
       "parametros": {},
       "servidor_id_servidor": 1
     },{"nome": "net_errout",
+      "tipo": "net",
+      "unidade_medida": "contagem",
+      "biblioteca": "psutil",
+      "parametros": {},
+      "servidor_id_servidor": 1
+    },{"nome": "net_dropin",
+      "tipo": "net",
+      "unidade_medida": "contagem",
+      "biblioteca": "psutil",
+      "parametros": {},
+      "servidor_id_servidor": 1
+    },{"nome": "net_dropout",
       "tipo": "net",
       "unidade_medida": "contagem",
       "biblioteca": "psutil",
