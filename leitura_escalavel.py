@@ -13,7 +13,18 @@ leitura = pd.read_csv('Python/escrita_escalavel.csv')
 
 leitura['virtual_memory_usage'] = 100*((leitura['virtual_memory_total'] - leitura['virtual_memory_available'])/leitura['virtual_memory_total'])
 
-def categorizar_cpu_time_user(cpu_time_user):
-    return 'betterRestart' if cpu_time_user >= 604800 else 'dontRestart'
+leitura.drop(columns=['virtual_memory_total', 'virtual_memory_available'], inplace=True)
 
-leitura['shouldRestart'] = leitura['cpu_time_user'].apply(categorizar_cpu_time_user)
+leitura.rename(columns={'disk_read_bytes' : 'disk_read_mbps', 'disk_write_bytes' : 'disk_write_mbps',
+                   'net_bytes_sent' : 'net_mbps_sent', 'net_bytes_recv' : 'net_mbps_recv'}, inplace=True)
+
+leitura['disk_read_mbps']=leitura['disk_read_mbps']/5
+leitura['disk_write_mbps']=leitura['disk_write_mbps']/5
+leitura['net_mbps_sent']=leitura['net_mbps_sent']/5
+leitura['net_mbps_recv']=leitura['net_mbps_recv']/5
+
+leitura['timestamp'] = datetime.strptime(leitura['timestamp'], "%Y-%m-%d %H:%M:%S")
+
+leitura.to_csv('Python/leitura_escalavel.csv', index=False, encoding='utf-8')
+
+
