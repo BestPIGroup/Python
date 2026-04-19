@@ -1,7 +1,9 @@
 import psutil
 import pandas as pd
+import numpy
 import csv
 import time
+import math
 from datetime import datetime
 
 def conversao_kb(valor: int):
@@ -37,4 +39,23 @@ leitura = leitura.reindex(columns=['user', 'id_mac', 'timestamp', 'cpu_percent',
 
 leitura.to_csv('Python/leitura_escalavel.csv', index=False, encoding='utf-8')
 
+leitura['virtual_memory_status'] = pd.cut(leitura['virtual_memory_usage'], 
+                         bins=[0, 35, 65, math.inf], 
+                        labels=['baixo', 'medio', 'alto'])
+leitura['cpu_percent_status'] = pd.cut(leitura['cpu_percent'], 
+                         bins=[0, 35, 65, math.inf], 
+                        labels=['baixo', 'medio', 'alto'])
+leitura['processo_cpu_percent_status'] = pd.cut(leitura['processo_cpu_percent_max_cpu'], 
+                         bins=[0, 35, 65, math.inf], 
+                        labels=['baixo', 'medio', 'alto'])
 
+def categorizar(valor):
+    if valor == 0:
+        return 'normal'
+    else:
+        return 'erro'
+
+# Cria a nova coluna
+leitura['net_status'] = (leitura['net_errin'] + leitura['net_errout'] + leitura['net_dropin'] + leitura['net_dropout']).apply(categorizar)
+
+leitura.to_csv('Python/client_escalavel.csv', index=False, encoding='utf-8')
