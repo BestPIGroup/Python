@@ -1,0 +1,6 @@
+user;id_mac;timestamp;cpu_percent;cpu_time_user;cpu_ctx_switches;processo_pid_max_cpu;processo_name_max_cpu;processo_cpu_percent_max_cpu;total_processos;virtual_memory_total;virtual_memory_available;disk_read_bytes;disk_write_bytes;net_bytes_sent;net_bytes_recv;net_packets_sent;net_packets_recv;net_errin;net_errout;net_dropin;net_dropout;usuarios_logados
+vmath;00:d7:6d:20:c0:88;2026-04-19 19:46:10;29.3;3492.14;16783;0;System Idle Process;78.3125;276;16714698752;4254625792;0;151552;59355;83736;244;231;0;0;0;0;1
+vmath;00:d7:6d:20:c0:88;2026-04-19 19:46:17;20.7;3499.67;144999;0;System Idle Process;69.4;276;16714698752;4309909504;0;1052672;125912;92780;609;432;0;0;0;0;1
+vmath;00:d7:6d:20:c0:88;2026-04-19 19:46:25;12.0;3506.98;127144;0;System Idle Process;76.05;276;16714698752;4319830016;32768;372736;260806;127218;576;553;0;0;0;0;1
+vmath;00:d7:6d:20:c0:88;2026-04-19 19:46:33;16.1;3513.56;133721;0;System Idle Process;70.3625;275;16714698752;4364427264;4096;819200;127878;99146;624;468;0;0;0;0;1
+vmath;00:d7:6d:20:c0:88;2026-04-19 19:46:41;20.3;3522.19;208976;0;System Idle Process;69.6625;274;16714698752;4289490944;0;561152;100781;92267;515;441;0;0;0;0;1

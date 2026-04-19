@@ -391,7 +391,7 @@ resultados = {
 
 nome_servidor = psutil.users()[0].name
 mac_servidor = get_mac_address()
-arquivo_csv = "Python/escrita_escalavel.csv"
+raw_csv = "Python/raw.csv"
 
 lista_nomes =[]
 
@@ -403,7 +403,7 @@ def escrita():
     cabecalho=["user", "id_mac", "timestamp"]
     cabecalho.extend(lista_nomes)
 
-    with open(arquivo_csv, mode="w",  newline='', encoding="utf-8") as file:
+    with open(raw_csv, mode="w",  newline='', encoding="utf-8") as file:
             writer = csv.writer(file, delimiter=";")
             writer.writerow(cabecalho)
 
@@ -424,15 +424,17 @@ def escrita():
         registro = [nome_servidor, mac_servidor, timestamp]
         registro.extend(lista_componentes)
 
-        with open(arquivo_csv, mode="a",  newline='', encoding="utf-8") as file:
+        with open(raw_csv, mode="a",  newline='', encoding="utf-8") as file:
             writer = csv.writer(file, delimiter=";")
             writer.writerow(registro)
 
         print(registro)
 
         time.sleep(5)
+    
+    # client.upload_file(raw_csv, "s3-teste-python-2026.04.11","raw/dados_brutos.csv")
 
-    # client.upload_file(arquivo_csv, "s3-teste-python-2026.04.11","raw/dados_brutos.csv")
+    os.remove(path = raw_csv)
 
     escrita()
 

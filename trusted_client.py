@@ -2,6 +2,7 @@ import psutil
 import pandas as pd
 import numpy
 import csv
+import os
 import time
 import math
 from datetime import datetime
@@ -9,9 +10,12 @@ from datetime import datetime
 def conversao_kb(valor: int):
     return round(valor/(1024), 2)
 
-arquivo_csv = "escrita_escalavel.csv"
+raw_csv = "Python/raw.csv"
+trusted_csv = "Python/trusted.csv"
+client_csv = "Python/client.csv"
 
-leitura = pd.read_csv('Python/escrita_escalavel.csv', sep=";")
+
+leitura = pd.read_csv(raw_csv, sep=";")
 
 print(leitura.head())
 
@@ -37,7 +41,9 @@ leitura = leitura.reindex(columns=['user', 'id_mac', 'timestamp', 'cpu_percent',
                                    'net_errin', 'net_errout', 'net_dropin', 'net_dropout', 'usuarios_logados'])
     
 
-leitura.to_csv('Python/leitura_escalavel.csv', index=False, encoding='utf-8')
+
+
+leitura.to_csv(trusted_csv, index=False, encoding='utf-8', mode = 'a', header =(not os.path.exists(trusted_csv)))
 
 leitura['virtual_memory_status'] = pd.cut(leitura['virtual_memory_usage'], 
                          bins=[0, 35, 65, math.inf], 
@@ -58,4 +64,4 @@ def categorizar(valor):
 # Cria a nova coluna
 leitura['net_status'] = (leitura['net_errin'] + leitura['net_errout'] + leitura['net_dropin'] + leitura['net_dropout']).apply(categorizar)
 
-leitura.to_csv('Python/client_escalavel.csv', index=False, encoding='utf-8')
+leitura.to_csv(client_csv, index=False, encoding='utf-8', mode = 'a', header = (not os.path.exists(client_csv)))
