@@ -5,7 +5,17 @@ import csv
 import os
 import time
 import math
+import mysql.connector
 from datetime import datetime
+
+# load_dotenv()
+
+# client = boto3.client(
+#     's3',
+#     aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID"),
+#     aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY"),
+#     aws_session_token = os.getenv("AWS_SESSION_TOKEN")
+# )
 
 def conversao_kb(valor: int):
     return round(valor/(1024), 2)
@@ -44,6 +54,37 @@ leitura = leitura.reindex(columns=['user', 'id_mac', 'timestamp', 'cpu_percent',
 
 
 leitura.to_csv(trusted_csv, index=False, encoding='utf-8', mode = 'a', header =(not os.path.exists(trusted_csv)))
+
+
+try:
+    db = mysql.connector.connect(
+        host="localhost",      # or your server IP
+        user="your_username",
+        password="your_password",
+        database="your_database_name"
+    )
+    
+    # 2. Create a cursor object
+    cursor = db.cursor()
+
+
+    for linha in leitura:
+        # 3. Execute a query
+        cursor.execute('SELECT limite_componente FROM componente_servidor ' \
+        'JOIN servidor ON componente_servidor.id_servidor = servidor.id_servidor' \
+        'WHERE servidor.endereco_mac = "{linha}"')
+
+        # 4. Fetch results
+        results = cursor.fetchall()
+        for row in results:
+            print(row)
+
+finally:
+    # 5. Close connection
+    if db.is_connected():
+        cursor.close()
+        db.close()
+
 
 leitura['virtual_memory_status'] = pd.cut(leitura['virtual_memory_usage'], 
                          bins=[0, 35, 65, math.inf], 
