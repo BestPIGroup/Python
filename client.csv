@@ -1,6 +1,0 @@
-user,id_mac,timestamp,cpu_percent,cpu_time_user,cpu_ctx_switches,processo_pid_max_cpu,processo_name_max_cpu,processo_cpu_percent_max_cpu,total_processos,virtual_memory_usage,disk_read_kbps,disk_write_kbps,disk_write_kbps,net_kbps_recv,net_packets_sent,net_packets_recv,net_errin,net_errout,net_dropin,net_dropout,usuarios_logados,virtual_memory_status,cpu_percent_status,processo_cpu_percent_status,net_status
-vmath,00:d7:6d:20:c0:88,19/04/2026 19:46:10,29.3,3492.14,16783,0,System Idle Process,78.3125,276,74.54560291437552,0.0,29.6,29.6,16.35,244,231,0,0,0,0,1,alto,baixo,alto,normal
-vmath,00:d7:6d:20:c0:88,19/04/2026 19:46:17,20.7,3499.67,144999,0,System Idle Process,69.4,276,74.2148538364516,0.0,205.6,205.6,18.12,609,432,0,0,0,0,1,alto,baixo,alto,normal
-vmath,00:d7:6d:20:c0:88,19/04/2026 19:46:25,12.0,3506.98,127144,0,System Idle Process,76.05,276,74.15550181254024,6.4,72.8,72.8,24.85,576,553,0,0,0,0,1,alto,baixo,alto,normal
-vmath,00:d7:6d:20:c0:88,19/04/2026 19:46:33,16.1,3513.56,133721,0,System Idle Process,70.3625,275,73.8886872640898,0.8,160.0,160.0,19.36,624,468,0,0,0,0,1,alto,baixo,alto,normal
-vmath,00:d7:6d:20:c0:88,19/04/2026 19:46:41,20.3,3522.19,208976,0,System Idle Process,69.6625,274,74.33701314247892,0.0,109.6,109.6,18.02,515,441,0,0,0,0,1,alto,baixo,alto,normal
