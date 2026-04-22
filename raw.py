@@ -212,8 +212,11 @@ def coletar_net_dropout(parametros):
 def coletar_total_processos(parametros):
     return round(len(psutil.pids()),2)
 def coletar_processo_pid_max_cpu(parametros):
-    top_cpu = max(psutil.process_iter(['pid', 'name', 'cpu_percent']), 
-              key=lambda p: p.info['cpu_percent'])
+    for p in psutil.process_iter(['cpu_percent']):
+        p.info['cpu_percent']
+    time.sleep(0.1)
+    processos = list(psutil.process_iter(['pid', 'name', 'cpu_percent']))
+    top_cpu = max(processos, key=lambda p: p.info['cpu_percent'])
     return top_cpu.info['pid']
 def coletar_processo_name_max_cpu(parametros):
     top_cpu = max(psutil.process_iter(['pid', 'name', 'cpu_percent']), 
@@ -407,7 +410,15 @@ def escrita():
             writer = csv.writer(file, delimiter=";")
             writer.writerow(cabecalho)
 
-    for i in range(1, 60):    
+    while True:    
+
+        print(os.path.exists(raw_csv))
+
+        if os.path.exists(raw_csv) == False:
+
+            with open(raw_csv, mode="w",  newline='', encoding="utf-8") as file:
+                writer = csv.writer(file, delimiter=";")
+                writer.writerow(cabecalho)
 
         lista_componentes = []
 
@@ -427,8 +438,6 @@ def escrita():
         with open(raw_csv, mode="a",  newline='', encoding="utf-8") as file:
             writer = csv.writer(file, delimiter=";")
             writer.writerow(registro)
-
-        print(registro)
 
         time.sleep(5)
     

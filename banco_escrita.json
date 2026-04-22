@@ -64,6 +64,14 @@
         "path": "/"
       },
       "servidor_id_servidor": 1
+    },{"nome": "disk_percent",
+      "tipo": "disco",
+      "unidade_medida": "%",
+      "biblioteca": "psutil",
+      "parametros": {
+        "path": "/"
+      },
+      "servidor_id_servidor": 1
     },{"nome": "disk_write_bytes",
       "tipo": "disco",
       "unidade_medida": "bytes",
