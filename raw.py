@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 #     aws_session_token = os.getenv("AWS_SESSION_TOKEN")
 # )
 
-with open("Python/banco_escrita.json", "r", encoding="utf-8") as file:
+with open("banco_escrita.json", "r", encoding="utf-8") as file:
     dados = json.load(file)
 
 def conversao_gb(valor: float):
@@ -394,7 +394,7 @@ resultados = {
 
 nome_servidor = psutil.users()[0].name
 mac_servidor = get_mac_address()
-raw_csv = "Python/raw.csv"
+raw_csv = "raw.csv"
 
 lista_nomes =[]
 
@@ -438,6 +438,7 @@ def escrita():
 
             registro = [nome_servidor, mac_servidor, timestamp]
             registro.extend(lista_componentes)
+            print(registro)
 
             with open(raw_csv, mode="a",  newline='', encoding="utf-8") as file:
                 writer = csv.writer(file, delimiter=";")
