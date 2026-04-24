@@ -64,9 +64,9 @@ def pesquisarComponente(nome,mac):
 def conversao_kb(valor: int):
     return round(valor/(1024), 2)
 
-raw_csv = "Python/raw.csv"
-trusted_csv = "Python/trusted.csv"
-client_csv = "Python/client.csv"
+raw_csv = "raw.csv"
+trusted_csv = "trusted.csv"
+client_csv = "client.csv"
 
 
 leitura = pd.read_csv(raw_csv, sep=";")
@@ -120,7 +120,7 @@ leitura = leitura.reindex(columns=['user', 'id_mac', 'timestamp', 'cpu_percent',
     
 leitura.to_csv(trusted_csv, index=False, encoding='utf-8', mode = 'a', header =(not os.path.exists(trusted_csv)))
 
-headdersClient = ["idMac","usuarios","timestamp","PcpuPercent","cpu_time_user","cpu_ctx_switches","processos_pids_max_cpu","processos_names_max_cpu","processos_cpu_percent_max_cpu","total_processos","Pvirtual_memory_usage","Pdisk_read_kbps","Pdisk_percent","Pdisk_write_kbps","Pnet_kbps_recv","Pnet_packets_recv","net_dropin","net_dropout","usuarios_logados"]
+headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","processos_pids_max_cpu","processos_names_max_cpu","processos_cpu_percent_max_cpu","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_recv","net_packets_recv","net_dropin","net_dropout","usuarios_logados"]
 
 listaMacs = []
 
@@ -161,7 +161,7 @@ def categorizar(valor):
         return 'Alerta'
 
 
-headdersClient = ["idMac","usuarios","timestamp","PcpuPercent","cpu_time_user","cpu_ctx_switches","processos_pids_max_cpu","processos_names_max_cpu","processos_cpu_percent_max_cpu","total_processos","Pvirtual_memory_usage","Pdisk_read_kbps","Pdisk_percent","Pdisk_write_kbps","Pnet_kbps_recv","Pnet_packets_recv","Pnet_packets_sent","net_dropin","net_dropout","usuarios_logados","virtual_memory_status","cpu_percent_status","disk_percent_status","net_status"]
+headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","processos_pids_max_cpu","processos_names_max_cpu","processos_cpu_percent_max_cpu","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_recv","net_packets_recv","net_packets_sent","net_dropin","net_dropout","usuarios_logados","virtual_memory_status","cpu_percent_status","disk_percent_status","net_status"]
 
 novasLinhas = []
 
@@ -195,22 +195,33 @@ for dado in dados:
     dict_net_status = dado["df"]['net_status'].value_counts().to_dict()
     str_net_status = ", ".join([f"{word}: {count}" for word, count in dict_net_status.items()])
 
-    novasLinhas.append([dado["mac"],dado["df"]['user'].unique().tolist(),datetime.now().strftime('%d/%m/%Y %H:%M:%S'),dado["df"]["cpu_percent"].max(),dado["df"]["cpu_time_user"].sum(),dado["df"]["cpu_ctx_switches"].sum(),dado["df"]["processo_pid_max_cpu"].unique().tolist(),dado["df"]["processo_name_max_cpu"].unique().tolist(),dado["df"].groupby("processo_name_max_cpu")["processo_cpu_percent_max_cpu"].max().to_dict(),str(dado["df"]["total_processos"].sum()),str(dado["df"]["virtual_memory_usage"].max()),str(dado["df"]["disk_read_kbps"].max()),str(dado["df"]['disk_percent'].max()),str(dado["df"]["disk_write_kbps"].max()),str(dado["df"]["net_kbps_recv"].max()),dado["df"]["net_packets_sent"].max(), dado["df"]["net_packets_sent"].max(),dado["df"]["net_dropin"].sum(),dado["df"]["net_dropout"].sum(),dado["df"]["usuarios_logados"].sum(),str_virtual_memory_status,str_cpu_percent_status,str_disk_percent_status, str_net_status])
+    novasLinhas.append([dado["mac"],
+                        dado["df"]['user'].unique().tolist(),
+                        datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
+                        dado["df"]["cpu_percent"].max(),
+                        dado["df"]["cpu_time_user"].sum(),
+                        dado["df"]["cpu_ctx_switches"].sum(),
+                        dado["df"]["processo_pid_max_cpu"].unique().tolist(),
+                        dado["df"]["processo_name_max_cpu"].unique().tolist(),
+                        dado["df"].groupby("processo_name_max_cpu")["processo_cpu_percent_max_cpu"].max().to_dict(),
+                        str(dado["df"]["total_processos"].sum()),
+                        str(dado["df"]["virtual_memory_usage"].max()),
+                        str(dado["df"]["disk_read_kbps"].max()),
+                        str(dado["df"]['disk_percent'].max()),
+                        str(dado["df"]["disk_write_kbps"].max()),
+                        str(dado["df"]["net_kbps_recv"].max()),
+                        dado["df"]["net_packets_sent"].max(),
+                         dado["df"]["net_packets_sent"].max(),
+                        dado["df"]["net_dropin"].sum(),
+                        dado["df"]["net_dropout"].sum(),
+                        dado["df"]["usuarios_logados"].sum(),
+                        str_virtual_memory_status,
+                        str_cpu_percent_status,
+                        str_disk_percent_status,
+                        str_net_status])
 
+clientDf = pd.DataFrame(novasLinhas, columns=headersClient)
 
-dfClient = ""
-
-if(os.path.exists(client_csv)) == False:
-
-    with open(client_csv, "w", newline="") as f:
-
-        escritor = csv.writer(f)
-        escritor.writerow(headdersClient)
-
-
-with open(client_csv, "a", newline="") as f:
-
-    escritor = csv.writer(f)
-    escritor.writerows(novasLinhas)
+clientDf.to_csv(client_csv, mode="a", header=not os.path.exists(client_csv))
 
 os.remove(raw_csv)
