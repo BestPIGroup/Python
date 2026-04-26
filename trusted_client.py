@@ -161,25 +161,28 @@ def categorizar(valor):
         return 'Alerta'
 
 
-headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","processos_pids_max_cpu","processos_names_max_cpu","processos_cpu_percent_max_cpu","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_recv","net_packets_recv","net_packets_sent","net_dropin","net_dropout","usuarios_logados","virtual_memory_status","cpu_percent_status","disk_percent_status","net_status"]
+headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","processos_pids_max_cpu","processos_names_max_cpu","processos_cpu_percent_max_cpu","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_recv","net_packets_recv","net_packets_sent","net_dropin","net_dropout","usuarios_logados","virtual_memory_status","cpu_percent_status","disk_percent_status","net_errors"]
 
 novasLinhas = []
 
 for dado in dados:
-
-    dado["df"]['virtual_memory_status'] = pd.cut(dado["df"]['virtual_memory_usage'], 
-                        bins=[0,pesquisarComponente("ram",dado["mac"]), math.inf], 
-                        labels=["Normal","Alerta"])
     
-    dado["df"]['cpu_percent_status'] = pd.cut(dado["df"]['cpu_percent'], 
-                        bins=[0,pesquisarComponente("CPU",dado["mac"]), math.inf], 
-                        labels=["Normal","Alerta"])
+    if dado["df"]['virtual_memory_usage'] < pesquisarComponente("ram",dado["mac"]):
+        dado["df"]["virtual_memory_status"] = "Normal"
+    else:
+        dado["df"]["virtual_memory_status"] = "Alerta"
 
-    dado["df"]['disk_percent_status'] = pd.cut(dado["df"]['disk_percent'], 
-                        bins=[0,pesquisarComponente("memoria",dado["mac"]), math.inf], 
-                        labels=["Normal","Alerta"])
+    if dado["df"]['cpu_percent'] < pesquisarComponente("CPU",dado["mac"]):
+        dado["df"]["cpu_percent_status"] = "Normal"
+    else:
+        dado["df"]["cpu_percent_status"] = "Alerta"
+
+    if dado["df"]['disk_percent'] < pesquisarComponente("memoria",dado["mac"]):
+        dado["df"]["disk_percent_status"] = "Normal"
+    else:
+        dado["df"]["disk_percent_status"] = "Alerta"
     
-    dado["df"]['net_status'] = (dado["df"]['net_errin'] + dado["df"]['net_errout'] + dado["df"]['net_dropin'] + dado["df"]['net_dropout']).apply(categorizar)
+    dado["df"]['net_errors'] = (dado["df"]['net_errin'] + dado["df"]['net_errout'] + dado["df"]['net_dropin'] + dado["df"]['net_dropout']).apply(categorizar)
 
     print(dado["df"]['disk_percent'])
 
@@ -192,8 +195,8 @@ for dado in dados:
     dict_disk_percent_status = dado["df"]['disk_percent_status'].value_counts().to_dict()
     str_disk_percent_status = ", ".join([f"{word}: {count}" for word, count in dict_disk_percent_status.items()])
     
-    dict_net_status = dado["df"]['net_status'].value_counts().to_dict()
-    str_net_status = ", ".join([f"{word}: {count}" for word, count in dict_net_status.items()])
+    dict_net_errors = dado["df"]['net_errors'].value_counts().to_dict()
+    str_net_errors = ", ".join([f"{word}: {count}" for word, count in dict_net_errors.items()])
 
     novasLinhas.append([dado["mac"],
                         dado["df"]['user'].unique().tolist(),
@@ -218,7 +221,7 @@ for dado in dados:
                         str_virtual_memory_status,
                         str_cpu_percent_status,
                         str_disk_percent_status,
-                        str_net_status])
+                        str_net_errors])
 
 clientDf = pd.DataFrame(novasLinhas, columns=headersClient)
 
