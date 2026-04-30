@@ -8,16 +8,18 @@ from datetime import datetime
 from getmac import get_mac_address
 from dotenv import load_dotenv
 
-# load_dotenv()
+load_dotenv()
 
-# client = boto3.client(
-#     's3',
-#     aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID"),
-#     aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY"),
-#     aws_session_token = os.getenv("AWS_SESSION_TOKEN")
-# )
+client = boto3.client(
+    "s3",
+    aws_access_key_id=os.getenv("aws_access_key_id"),
+    aws_secret_access_key=os.getenv("aws_secret_access_key"),
+    aws_session_token=os.getenv("aws_session_token")
+)
 
-with open("banco_escrita.json", "r", encoding="utf-8") as file:
+bucket = os.getenv("bucket")
+
+with open("Python/banco_escrita.json", "r", encoding="utf-8") as file:
     dados = json.load(file)
 
 def conversao_gb(valor: float):
@@ -394,11 +396,13 @@ resultados = {
 
 nome_servidor = psutil.users()[0].name
 mac_servidor = get_mac_address()
-raw_csv = "raw.csv"
+raw_csv = f"{mac_servidor.replace(":","_")}_"+datetime.now().strftime("%Y-%m-%d %H-%M-%S")+".csv"
 
 lista_nomes =[]
 
 def escrita():
+
+    raw_csv = f"{mac_servidor.replace(":","_")}_"+datetime.now().strftime("%Y-%m-%d %H-%M-%S")+".csv"
 
     for componentes in dados["componentes"]:
             lista_nomes.append(componentes["nome"])
@@ -416,6 +420,7 @@ def escrita():
 
         if os.path.exists(raw_csv) == False:
 
+            raw_csv = f"{mac_servidor.replace(":","_")}_"+datetime.now().strftime("%Y-%m-%d %H-%M-%S")+".csv"
             with open(raw_csv, mode="w",  newline='', encoding="utf-8") as file:
                 writer = csv.writer(file, delimiter=";")
                 writer.writerow(cabecalho)
@@ -440,9 +445,22 @@ def escrita():
             registro.extend(lista_componentes)
             print(registro)
 
+
             with open(raw_csv, mode="a",  newline='', encoding="utf-8") as file:
                 writer = csv.writer(file, delimiter=";")
                 writer.writerow(registro)
+
+            num_linhas = 0
+
+            with open(raw_csv,"r") as f:
+
+                leitor = csv.reader(f)
+                num_linhas = sum(1 for row in leitor)
+
+            if(num_linhas == 11):
+
+                client.upload_file(raw_csv,bucket,f"raw/{raw_csv}")
+                os.remove(raw_csv)
 
             time.sleep(5)
     

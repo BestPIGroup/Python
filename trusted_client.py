@@ -3,10 +3,12 @@ import pandas as pd
 import csv
 import os
 import math
+from io import StringIO
 import mysql.connector
 from datetime import datetime
 import boto3
 from botocore.exceptions import ClientError
+import numpy as np
 
 load_dotenv()
 
@@ -59,6 +61,9 @@ def pesquisarComponente(nome,mac):
             db.close()
 
 
+    print (limites)
+    print(next((limite for limite in limites if limite["componente"] == nome), None)["limite"])
+
     return next((limite for limite in limites if limite["componente"] == nome), None)["limite"]
 
 def conversao_kb(valor: int):
@@ -68,32 +73,42 @@ raw_csv = "raw.csv"
 trusted_csv = "trusted.csv"
 client_csv = "client.csv"
 
+paginator = client.get_paginator('list_objects_v2')
+lista_raws = []
 
-leitura = pd.read_csv(raw_csv, sep=";")
+for page in paginator.paginate(Bucket = bucket, Prefix = "raw/"):
 
-try:
+    for obj in page["Contents"]:
 
-    client.head_object(Bucket = bucket, Key = "raw/raw.csv")
-                
-except ClientError as e:
+        chave = obj["Key"]
 
-    if e.response['Error']['Code'] == "404":
+        response = client.get_object(Bucket= bucket,Key=chave)
+        lista_raws.append({"nome": obj["Key"][4:21],"conteudo": response})
 
-        client.upload_file(raw_csv,bucket,"raw/raw.csv")
+lista_raws = sorted(lista_raws, key = lambda x: x["conteudo"]["LastModified"], reverse=True)
 
-res = client.get_object(Bucket = bucket, Key = "raw/raw.csv")
-csvAws = res["Body"].read().decode("utf-8")
+raws = []
+ultimos_raws = []
 
-with open("csvAws.csv","w",newline= "") as f:
+for obj in lista_raws:
 
-    f.write(csvAws)
+    if not obj["nome"] in raws:
 
-with open("csvAws.csv", "a", newline="") as f:
+        ultimos_raws.append(obj)
+        raws.append(obj["nome"])
 
-    escritor = csv.writer(f , delimiter=";")
-    escritor.writerows(leitura.values)
+print(ultimos_raws)
 
-client.upload_file("csvAws.csv",bucket,"raw/raw.csv")
+dataframes_raw = []
+
+for raw in ultimos_raws:
+
+    dataframes_raw.append(pd.read_csv(StringIO(raw["conteudo"]["Body"].read().decode("utf-8")),sep=";"))
+
+leitura = pd.concat(dataframes_raw, ignore_index=True)
+
+print(leitura)
+
 
 #os.remove("csvAws.csv")
 
@@ -118,7 +133,31 @@ leitura = leitura.reindex(columns=['user', 'id_mac', 'timestamp', 'cpu_percent',
                                    'disk_percent', 'net_kbps_recv', 'net_packets_sent', 'net_packets_recv', 
                                    'net_errin', 'net_errout', 'net_dropin', 'net_dropout', 'usuarios_logados'])
     
-leitura.to_csv(trusted_csv, index=False, encoding='utf-8', mode = 'a', header =(not os.path.exists(trusted_csv)))
+try:
+
+    client.head_object(Bucket = bucket, Key = "trusted/trusted.csv")
+
+    trusted = client.get_object(Bucket = bucket, Key = "trusted/trusted.csv")
+
+    with open(trusted_csv,"w",newline="") as f:
+
+        f.write(trusted["Body"].read().decode("utf-8"))
+
+    leitura.to_csv(trusted_csv, index=False, encoding='utf-8', mode = 'a', header =(not os.path.exists(trusted_csv)))
+
+    client.upload_file(trusted_csv,bucket,"trusted/trusted.csv")
+
+    os.remove(trusted_csv)
+
+except ClientError as e:
+    
+    if e.response['Error']['Code'] == "404":
+
+        leitura.to_csv(trusted_csv, index=False, encoding='utf-8', mode = 'a', header =(not os.path.exists(trusted_csv)))
+
+        client.upload_file(trusted_csv,bucket,"trusted/trusted.csv")
+
+        os.remove(trusted_csv)
 
 headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","processos_pids_max_cpu","processos_names_max_cpu","processos_cpu_percent_max_cpu","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_recv","net_packets_recv","net_dropin","net_dropout","usuarios_logados"]
 
@@ -167,20 +206,26 @@ novasLinhas = []
 
 for dado in dados:
     
-    if dado["df"]['virtual_memory_usage'] < pesquisarComponente("ram",dado["mac"]):
-        dado["df"]["virtual_memory_status"] = "Normal"
-    else:
-        dado["df"]["virtual_memory_status"] = "Alerta"
+    dado["df"]["virtual_memory_status"] = np.where(dado["df"]['virtual_memory_usage'] >= pesquisarComponente("Memória Usada (%)",dado["mac"]),"Normal","Alerta" )
 
-    if dado["df"]['cpu_percent'] < pesquisarComponente("CPU",dado["mac"]):
-        dado["df"]["cpu_percent_status"] = "Normal"
-    else:
-        dado["df"]["cpu_percent_status"] = "Alerta"
+    dado["df"]["cpu_percent_status"] = np.where(dado["df"]['cpu_percent'] >= pesquisarComponente("Uso de CPU (%)",dado["mac"]),"Normal","Alerta" )
 
-    if dado["df"]['disk_percent'] < pesquisarComponente("memoria",dado["mac"]):
-        dado["df"]["disk_percent_status"] = "Normal"
-    else:
-        dado["df"]["disk_percent_status"] = "Alerta"
+    dado["df"]["disk_percent_status"] = np.where(dado["df"]["disk_percent"] >= pesquisarComponente("Memória Usada (%)",dado["mac"]),"Normal","Alerta" )
+    
+    #if dado["df"]['virtual_memory_usage'] < pesquisarComponente("Memória Usada (%)",dado["mac"]):
+    #    dado["df"]["virtual_memory_status"] = "Normal"
+    #else:
+    #    dado["df"]["virtual_memory_status"] = "Alerta"
+
+    #if dado["df"]['cpu_percent'] < pesquisarComponente("Uso de CPU (%)",dado["mac"]):
+    #    dado["df"]["cpu_percent_status"] = "Normal"
+    #else:
+    #    dado["df"]["cpu_percent_status"] = "Alerta"
+
+    #if dado["df"]['disk_percent'] < pesquisarComponente("Uso de Disco (%)",dado["mac"]):
+    #    dado["df"]["disk_percent_status"] = "Normal"
+    #else:
+    #    dado["df"]["disk_percent_status"] = "Alerta"
     
     dado["df"]['net_errors'] = (dado["df"]['net_errin'] + dado["df"]['net_errout'] + dado["df"]['net_dropin'] + dado["df"]['net_dropout']).apply(categorizar)
 
@@ -224,7 +269,30 @@ for dado in dados:
                         str_net_errors])
 
 clientDf = pd.DataFrame(novasLinhas, columns=headersClient)
+clientDf.to_csv(client_csv, mode="a", header=not os.path.exists(client_csv), index = False)
 
-clientDf.to_csv(client_csv, mode="a", header=not os.path.exists(client_csv))
+try:
 
-os.remove(raw_csv)
+    client.head_object(Bucket = bucket, Key = "client/client.csv")
+
+    clientt = client.get_object(Bucket = bucket, Key = "client/client.csv")
+
+    with open(client_csv,"w",newline="") as f:
+
+        f.write(clientt["Body"].read().decode("utf-8"))
+
+    clientDf.to_csv(client_csv, mode="a", header=not os.path.exists(client_csv), index = False)
+
+    client.upload_file(client_csv,bucket,"client/client.csv")
+
+    os.remove(client_csv)
+
+except ClientError as e:
+    
+    if e.response['Error']['Code'] == "404":
+
+        clientDf.to_csv(client_csv, mode="a", header=not os.path.exists(client_csv), index = False)
+
+        client.upload_file(client_csv,bucket,"client/client.csv")
+
+        os.remove(client_csv)
