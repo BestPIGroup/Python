@@ -1,4 +1,5 @@
-raw.csv
-trusted.csv
-client.csv
+raw/raw.csv
+trusted/*.csv
+client/*.csv
+*.csv
 .env

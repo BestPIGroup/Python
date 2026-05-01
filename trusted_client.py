@@ -3,10 +3,12 @@ import pandas as pd
 import csv
 import os
 import math
+from io import StringIO
 import mysql.connector
 from datetime import datetime
 import boto3
 from botocore.exceptions import ClientError
+import numpy as np
 
 load_dotenv()
 
@@ -17,11 +19,6 @@ client = boto3.client(
     aws_secret_access_key=os.getenv("aws_secret_access_key"),
     aws_session_token=os.getenv("aws_session_token")
 )
-
-print(os.getenv("aws_access_key_id"))
-print(os.getenv("aws_secret_access_key"))
-print(os.getenv("aws_session_token"))
-print(os.getenv("bucket"))
 
 bucket = os.getenv("bucket")
 
@@ -59,41 +56,66 @@ def pesquisarComponente(nome,mac):
             db.close()
 
 
+    print (limites)
+    print(next((limite for limite in limites if limite["componente"] == nome), None)["limite"])
+
     return next((limite for limite in limites if limite["componente"] == nome), None)["limite"]
 
 def conversao_kb(valor: int):
     return round(valor/(1024), 2)
 
-raw_csv = "Python/raw.csv"
-trusted_csv = "Python/trusted.csv"
-client_csv = "Python/client.csv"
+raw_csv = "raw.csv"
+trusted_csv = "trusted.csv"
+client_csv = "client.csv"
+
+paginator = client.get_paginator('list_objects_v2')
+lista_raws = []
 
 
-leitura = pd.read_csv(raw_csv, sep=";")
+for page in paginator.paginate(Bucket=bucket, Prefix="raw/"):
+    for obj in page["Contents"]:
+        chave = obj["Key"]
+        response = client.get_object(Bucket=bucket, Key=chave)
+        
+        # READ AND DECODE HERE so it's stored in the dictionary
+        content_string = response['Body'].read().decode('utf-8')
+        
+        lista_raws.append({
+            "nome": obj["Key"][4:21],
+            "conteudo_str": content_string, # Save the actual string
+            "LastModified": response["LastModified"] # Save this for sorting
+        })
+lista_raws = sorted(lista_raws, key=lambda x: x["LastModified"], reverse=True)
 
-try:
 
-    client.head_object(Bucket = bucket, Key = "raw/raw.csv")
-                
-except ClientError as e:
 
-    if e.response['Error']['Code'] == "404":
+raws = []
+ultimos_raws = []
 
-        client.upload_file(raw_csv,bucket,"raw/raw.csv")
+for obj in lista_raws:
 
-res = client.get_object(Bucket = bucket, Key = "raw/raw.csv")
-csvAws = res["Body"].read().decode("utf-8")
+    if not obj["nome"] in raws:
 
-with open("csvAws.csv","w",newline= "") as f:
+        ultimos_raws.append(obj)
+        raws.append(obj["nome"])
 
-    f.write(csvAws)
 
-with open("csvAws.csv", "a", newline="") as f:
 
-    escritor = csv.writer(f , delimiter=";")
-    escritor.writerows(leitura.values)
+dataframes_raw = []
 
-client.upload_file("csvAws.csv",bucket,"raw/raw.csv")
+leitura = pd.DataFrame()
+
+for raw in ultimos_raws:
+    csv_data = raw['conteudo_str']
+    if csv_data.strip():
+        df = pd.read_csv(StringIO(csv_data), sep=";")
+        dataframes_raw.append(df)
+
+if dataframes_raw:
+    leitura = pd.concat(dataframes_raw, ignore_index=True)
+print(dataframes_raw)
+
+
 
 #os.remove("csvAws.csv")
 
@@ -118,9 +140,33 @@ leitura = leitura.reindex(columns=['user', 'id_mac', 'timestamp', 'cpu_percent',
                                    'disk_percent', 'net_kbps_recv', 'net_packets_sent', 'net_packets_recv', 
                                    'net_errin', 'net_errout', 'net_dropin', 'net_dropout', 'usuarios_logados'])
     
-leitura.to_csv(trusted_csv, index=False, encoding='utf-8', mode = 'a', header =(not os.path.exists(trusted_csv)))
+try:
 
-headdersClient = ["idMac","usuarios","timestamp","PcpuPercent","cpu_time_user","cpu_ctx_switches","processos_pids_max_cpu","processos_names_max_cpu","processos_cpu_percent_max_cpu","total_processos","Pvirtual_memory_usage","Pdisk_read_kbps","Pdisk_percent","Pdisk_write_kbps","Pnet_kbps_recv","Pnet_packets_recv","net_dropin","net_dropout","usuarios_logados"]
+    client.head_object(Bucket = bucket, Key = "trusted/trusted.csv")
+
+    trusted = client.get_object(Bucket = bucket, Key = "trusted/trusted.csv")
+
+    with open(trusted_csv,"w",newline="") as f:
+
+        f.write(trusted["Body"].read().decode("utf-8"))
+
+    leitura.to_csv(trusted_csv, index=False, encoding='utf-8', mode = 'a', header =(not os.path.exists(trusted_csv)))
+
+    client.upload_file(trusted_csv,bucket,"trusted/trusted.csv")
+
+    os.remove(trusted_csv)
+
+except ClientError as e:
+    
+    if e.response['Error']['Code'] == "404":
+
+        leitura.to_csv(trusted_csv, index=False, encoding='utf-8', mode = 'a', header =(not os.path.exists(trusted_csv)))
+
+        client.upload_file(trusted_csv,bucket,"trusted/trusted.csv")
+
+        os.remove(trusted_csv)
+
+headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","processos_pids_max_cpu","processos_names_max_cpu","processos_cpu_percent_max_cpu","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_recv","net_packets_recv","net_dropin","net_dropout","usuarios_logados"]
 
 listaMacs = []
 
@@ -161,25 +207,34 @@ def categorizar(valor):
         return 'Alerta'
 
 
-headdersClient = ["idMac","usuarios","timestamp","PcpuPercent","cpu_time_user","cpu_ctx_switches","processos_pids_max_cpu","processos_names_max_cpu","processos_cpu_percent_max_cpu","total_processos","Pvirtual_memory_usage","Pdisk_read_kbps","Pdisk_percent","Pdisk_write_kbps","Pnet_kbps_recv","Pnet_packets_recv","Pnet_packets_sent","net_dropin","net_dropout","usuarios_logados","virtual_memory_status","cpu_percent_status","disk_percent_status","net_status"]
+headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","processos_pids_max_cpu","processos_names_max_cpu","processos_cpu_percent_max_cpu","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_recv","net_packets_recv","net_packets_sent","net_dropin","net_dropout","usuarios_logados","virtual_memory_status","cpu_percent_status","disk_percent_status","net_errors"]
 
 novasLinhas = []
 
 for dado in dados:
-
-    dado["df"]['virtual_memory_status'] = pd.cut(dado["df"]['virtual_memory_usage'], 
-                        bins=[0,pesquisarComponente("ram",dado["mac"]), math.inf], 
-                        labels=["Normal","Alerta"])
     
-    dado["df"]['cpu_percent_status'] = pd.cut(dado["df"]['cpu_percent'], 
-                        bins=[0,pesquisarComponente("CPU",dado["mac"]), math.inf], 
-                        labels=["Normal","Alerta"])
+    dado["df"]["virtual_memory_status"] = np.where(dado["df"]['virtual_memory_usage'] >= pesquisarComponente("Memória Usada (%)",dado["mac"]),"Normal","Alerta" )
 
-    dado["df"]['disk_percent_status'] = pd.cut(dado["df"]['disk_percent'], 
-                        bins=[0,pesquisarComponente("memoria",dado["mac"]), math.inf], 
-                        labels=["Normal","Alerta"])
+    dado["df"]["cpu_percent_status"] = np.where(dado["df"]['cpu_percent'] >= pesquisarComponente("Uso de CPU (%)",dado["mac"]),"Normal","Alerta" )
+
+    dado["df"]["disk_percent_status"] = np.where(dado["df"]["disk_percent"] >= pesquisarComponente("Memória Usada (%)",dado["mac"]),"Normal","Alerta" )
     
-    dado["df"]['net_status'] = (dado["df"]['net_errin'] + dado["df"]['net_errout'] + dado["df"]['net_dropin'] + dado["df"]['net_dropout']).apply(categorizar)
+    #if dado["df"]['virtual_memory_usage'] < pesquisarComponente("Memória Usada (%)",dado["mac"]):
+    #    dado["df"]["virtual_memory_status"] = "Normal"
+    #else:
+    #    dado["df"]["virtual_memory_status"] = "Alerta"
+
+    #if dado["df"]['cpu_percent'] < pesquisarComponente("Uso de CPU (%)",dado["mac"]):
+    #    dado["df"]["cpu_percent_status"] = "Normal"
+    #else:
+    #    dado["df"]["cpu_percent_status"] = "Alerta"
+
+    #if dado["df"]['disk_percent'] < pesquisarComponente("Uso de Disco (%)",dado["mac"]):
+    #    dado["df"]["disk_percent_status"] = "Normal"
+    #else:
+    #    dado["df"]["disk_percent_status"] = "Alerta"
+    
+    dado["df"]['net_errors'] = (dado["df"]['net_errin'] + dado["df"]['net_errout'] + dado["df"]['net_dropin'] + dado["df"]['net_dropout']).apply(categorizar)
 
     print(dado["df"]['disk_percent'])
 
@@ -192,25 +247,59 @@ for dado in dados:
     dict_disk_percent_status = dado["df"]['disk_percent_status'].value_counts().to_dict()
     str_disk_percent_status = ", ".join([f"{word}: {count}" for word, count in dict_disk_percent_status.items()])
     
-    dict_net_status = dado["df"]['net_status'].value_counts().to_dict()
-    str_net_status = ", ".join([f"{word}: {count}" for word, count in dict_net_status.items()])
+    dict_net_errors = dado["df"]['net_errors'].value_counts().to_dict()
+    str_net_errors = ", ".join([f"{word}: {count}" for word, count in dict_net_errors.items()])
 
-    novasLinhas.append([dado["mac"],dado["df"]['user'].unique().tolist(),datetime.now().strftime('%d/%m/%Y %H:%M:%S'),dado["df"]["cpu_percent"].max(),dado["df"]["cpu_time_user"].sum(),dado["df"]["cpu_ctx_switches"].sum(),dado["df"]["processo_pid_max_cpu"].unique().tolist(),dado["df"]["processo_name_max_cpu"].unique().tolist(),dado["df"].groupby("processo_name_max_cpu")["processo_cpu_percent_max_cpu"].max().to_dict(),str(dado["df"]["total_processos"].sum()),str(dado["df"]["virtual_memory_usage"].max()),str(dado["df"]["disk_read_kbps"].max()),str(dado["df"]['disk_percent'].max()),str(dado["df"]["disk_write_kbps"].max()),str(dado["df"]["net_kbps_recv"].max()),dado["df"]["net_packets_sent"].max(), dado["df"]["net_packets_sent"].max(),dado["df"]["net_dropin"].sum(),dado["df"]["net_dropout"].sum(),dado["df"]["usuarios_logados"].sum(),str_virtual_memory_status,str_cpu_percent_status,str_disk_percent_status, str_net_status])
+    novasLinhas.append([dado["mac"],
+                        dado["df"]['user'].unique().tolist(),
+                        datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
+                        dado["df"]["cpu_percent"].max(),
+                        dado["df"]["cpu_time_user"].sum(),
+                        dado["df"]["cpu_ctx_switches"].sum(),
+                        dado["df"]["processo_pid_max_cpu"].unique().tolist(),
+                        dado["df"]["processo_name_max_cpu"].unique().tolist(),
+                        dado["df"].groupby("processo_name_max_cpu")["processo_cpu_percent_max_cpu"].max().to_dict(),
+                        str(dado["df"]["total_processos"].sum()),
+                        str(dado["df"]["virtual_memory_usage"].max()),
+                        str(dado["df"]["disk_read_kbps"].max()),
+                        str(dado["df"]['disk_percent'].max()),
+                        str(dado["df"]["disk_write_kbps"].max()),
+                        str(dado["df"]["net_kbps_recv"].max()),
+                        dado["df"]["net_packets_sent"].max(),
+                         dado["df"]["net_packets_sent"].max(),
+                        dado["df"]["net_dropin"].sum(),
+                        dado["df"]["net_dropout"].sum(),
+                        dado["df"]["usuarios_logados"].sum(),
+                        str_virtual_memory_status,
+                        str_cpu_percent_status,
+                        str_disk_percent_status,
+                        str_net_errors])
 
+clientDf = pd.DataFrame(novasLinhas, columns=headersClient)
+clientDf.to_csv(client_csv, mode="a", header=not os.path.exists(client_csv), index = False)
 
-dfClient = ""
+try:
 
-if(os.path.exists(client_csv)) == False:
+    client.head_object(Bucket = bucket, Key = "client/client.csv")
 
-    with open(client_csv, "w", newline="") as f:
+    clientt = client.get_object(Bucket = bucket, Key = "client/client.csv")
 
-        escritor = csv.writer(f)
-        escritor.writerow(headdersClient)
+    with open(client_csv,"w",newline="") as f:
 
+        f.write(clientt["Body"].read().decode("utf-8"))
 
-with open(client_csv, "a", newline="") as f:
+    clientDf.to_csv(client_csv, mode="a", header=not os.path.exists(client_csv), index = False)
 
-    escritor = csv.writer(f)
-    escritor.writerows(novasLinhas)
+    client.upload_file(client_csv,bucket,"client/client.csv")
 
-os.remove(raw_csv)
+    os.remove(client_csv)
+
+except ClientError as e:
+    
+    if e.response['Error']['Code'] == "404":
+
+        clientDf.to_csv(client_csv, mode="a", header=not os.path.exists(client_csv), index = False)
+
+        client.upload_file(client_csv,bucket,"client/client.csv")
+
+        os.remove(client_csv)
