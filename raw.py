@@ -19,7 +19,7 @@ client = boto3.client(
 
 bucket = os.getenv("bucket")
 
-with open("Python/banco_escrita.json", "r", encoding="utf-8") as file:
+with open("banco_escrita.json", "r", encoding="utf-8") as file:
     dados = json.load(file)
 
 def conversao_gb(valor: float):
@@ -464,11 +464,6 @@ def escrita():
 
             time.sleep(5)
     
-    # client.upload_file(raw_csv, "s3-teste-python-2026.04.11", f"raw/dados_brutos{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}.csv")
-
-    # os.remove(path = raw_csv)
-
-    # escrita()
 
 ctx_switches_global = psutil.cpu_stats().ctx_switches
 disk_read_bytes_global = psutil.disk_io_counters().read_bytes

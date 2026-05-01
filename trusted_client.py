@@ -20,11 +20,6 @@ client = boto3.client(
     aws_session_token=os.getenv("aws_session_token")
 )
 
-print(os.getenv("aws_access_key_id"))
-print(os.getenv("aws_secret_access_key"))
-print(os.getenv("aws_session_token"))
-print(os.getenv("bucket"))
-
 bucket = os.getenv("bucket")
 
 def pesquisarComponente(nome,mac):
@@ -76,16 +71,23 @@ client_csv = "client.csv"
 paginator = client.get_paginator('list_objects_v2')
 lista_raws = []
 
-for page in paginator.paginate(Bucket = bucket, Prefix = "raw/"):
 
+for page in paginator.paginate(Bucket=bucket, Prefix="raw/"):
     for obj in page["Contents"]:
-
         chave = obj["Key"]
+        response = client.get_object(Bucket=bucket, Key=chave)
+        
+        # READ AND DECODE HERE so it's stored in the dictionary
+        content_string = response['Body'].read().decode('utf-8')
+        
+        lista_raws.append({
+            "nome": obj["Key"][4:21],
+            "conteudo_str": content_string, # Save the actual string
+            "LastModified": response["LastModified"] # Save this for sorting
+        })
+lista_raws = sorted(lista_raws, key=lambda x: x["LastModified"], reverse=True)
 
-        response = client.get_object(Bucket= bucket,Key=chave)
-        lista_raws.append({"nome": obj["Key"][4:21],"conteudo": response})
 
-lista_raws = sorted(lista_raws, key = lambda x: x["conteudo"]["LastModified"], reverse=True)
 
 raws = []
 ultimos_raws = []
@@ -97,17 +99,22 @@ for obj in lista_raws:
         ultimos_raws.append(obj)
         raws.append(obj["nome"])
 
-print(ultimos_raws)
+
 
 dataframes_raw = []
 
+leitura = pd.DataFrame()
+
 for raw in ultimos_raws:
+    csv_data = raw['conteudo_str']
+    if csv_data.strip():
+        df = pd.read_csv(StringIO(csv_data), sep=";")
+        dataframes_raw.append(df)
 
-    dataframes_raw.append(pd.read_csv(StringIO(raw["conteudo"]["Body"].read().decode("utf-8")),sep=";"))
+if dataframes_raw:
+    leitura = pd.concat(dataframes_raw, ignore_index=True)
+print(dataframes_raw)
 
-leitura = pd.concat(dataframes_raw, ignore_index=True)
-
-print(leitura)
 
 
 #os.remove("csvAws.csv")
