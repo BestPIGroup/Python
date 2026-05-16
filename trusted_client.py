@@ -116,17 +116,15 @@ def lambda_handler(event, context):
 
     leitura['virtual_memory_usage'] = 100*((leitura['virtual_memory_total'] - leitura['virtual_memory_available'])/leitura['virtual_memory_total'])
 
-leitura.drop(columns=['virtual_memory_total', 'virtual_memory_available'], inplace=True)
+    leitura.drop(columns=['virtual_memory_total', 'virtual_memory_available'], inplace=True)
     
-leitura = leitura.reindex(columns=['user', 'id_mac', 'timestamp', 'cpu_percent', 'cpu_time_user', 'cpu_ctx_switches', 
+    leitura = leitura.reindex(columns=['user', 'id_mac', 'timestamp', 'cpu_percent', 'cpu_time_user', 'cpu_ctx_switches', 
                                    'top_3_processos_cpu', 'top_3_processos_disco', 'total_processos', 'virtual_memory_usage', 
                                    'disk_read_kbps', 'disk_write_kbps', 'disk_percent', 'net_kbps_recv', 'net_packets_sent', 
                                    'net_packets_recv', 'net_errin', 'net_errout', 'net_dropin', 'net_dropout', 'usuarios_logados'])
     
-try:
 
-    leitura.rename(columns={'disk_read_bytes' : 'disk_read_kbps', 'disk_write_bytes' : 'disk_write_kbps',
-                    'net_bytes_sent' : 'net_kbps_sent', 'net_bytes_recv' : 'net_kbps_recv'}, inplace=True)
+    leitura.rename(columns={'disk_read_bytes' : 'disk_read_kbps', 'disk_write_bytes' : 'disk_write_kbps','net_bytes_sent' : 'net_kbps_sent', 'net_bytes_recv' : 'net_kbps_recv'}, inplace=True)
 
     leitura['disk_read_kbps']=conversao_kb(leitura['disk_read_kbps']/5)
     leitura['disk_write_kbps']=conversao_kb(leitura['disk_write_kbps']/5)
@@ -135,12 +133,6 @@ try:
 
     leitura['timestamp'] = pd.to_datetime(leitura['timestamp'], format='%Y-%m-%d %H:%M:%S')
     leitura['timestamp'] = leitura['timestamp'].dt.strftime('%d/%m/%Y %H:%M:%S')
-
-    leitura = leitura.reindex(columns=['user', 'id_mac', 'timestamp', 'cpu_percent', 'cpu_time_user', 'cpu_ctx_switches', 
-                                    'processo_pid_max_cpu', 'processo_name_max_cpu', 'processo_cpu_percent_max_cpu', 
-                                    'total_processos', 'virtual_memory_usage', 'disk_read_kbps', 'disk_write_kbps',
-                                    'disk_percent', 'net_kbps_recv', 'net_packets_sent', 'net_packets_recv', 
-                                    'net_errin', 'net_errout', 'net_dropin', 'net_dropout', 'usuarios_logados'])
 
     trusted_csv_buffer = StringIO()
 
@@ -173,8 +165,6 @@ try:
                 Key="trusted/trusted.csv",
                 Body=trusted_csv_buffer.getvalue()
             )
-
-    headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","top_3_processos_cpu","top_3_processos_disco","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_recv","net_packets_recv","net_dropin","net_dropout","usuarios_logados"]
 
     listaMacs = []
 
@@ -215,7 +205,7 @@ try:
             return 'Alerta'
 
 
-    headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","processos_pids_max_cpu","processos_names_max_cpu","processos_cpu_percent_max_cpu","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_recv","net_packets_recv","net_packets_sent","net_dropin","net_dropout","usuarios_logados","virtual_memory_status","cpu_percent_status","disk_percent_status","net_errors"]
+    headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","top_3_processos_cpu","top_3_processos_disco","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_recv","net_packets_recv","net_packets_sent","net_dropin","net_dropout","usuarios_logados","virtual_memory_status","cpu_percent_status","disk_percent_status","net_errors"]
 
     novasLinhas = []
 
@@ -292,11 +282,12 @@ try:
 
         client_existente = pd.read_csv(
             StringIO(clientt["Body"].read().decode("utf-8"))
+            ,sep=";"
         )
 
-        client_final = pd.concat([client_existente, clientDf], ignore_index=True)
+        client_final = pd.concat([client_existente, clientDf], ignore_index=True)   
 
-        client_final.to_csv(client_csv_buffer, index=False)
+        client_final.to_csv(client_csv_buffer, index=False, sep=";")
 
         client.put_object(
             Bucket=bucket,
@@ -308,7 +299,7 @@ try:
         
         if e.response['Error']['Code'] == "NoSuchKey":
 
-            clientDf.to_csv(client_csv_buffer, index=False)
+            clientDf.to_csv(client_csv_buffer, index=False,sep=";")
 
             client.put_object(
                 Bucket=bucket,

@@ -8,16 +8,16 @@ from datetime import datetime
 from getmac import get_mac_address
 from dotenv import load_dotenv
 
-# load_dotenv()
+load_dotenv()
 
-# client = boto3.client(
-#     "s3",
-#     aws_access_key_id=os.getenv("aws_access_key_id"),
-#     aws_secret_access_key=os.getenv("aws_secret_access_key"),
-#     aws_session_token=os.getenv("aws_session_token")
-# )
+client = boto3.client(
+    "s3",
+    aws_access_key_id=os.getenv("aws_access_key_id"),
+    aws_secret_access_key=os.getenv("aws_secret_access_key"),
+    aws_session_token=os.getenv("aws_session_token")
+)
 
-# bucket = os.getenv("bucket")
+bucket = os.getenv("bucket")
 
 with open("banco_escrita.json", "r", encoding="utf-8") as file:
     dados = json.load(file)
@@ -269,6 +269,16 @@ def coletar_bateria_plugada(parametros):
 def coletar_bateria_segundos_restantes(parametros):
     bateria = psutil.sensors_battery()
     return round(bateria.secsleft,2)
+def coletar_arquivos_abertos(parametros):
+    arquivos_abertos_total = 0
+    for proc in psutil.process_iter(['pid', 'name']):
+        try:
+            arquvios_abertos_local = proc.open_files()
+            arquivos_abertos_total += len(arquvios_abertos_local)
+        except (psutil.AccessDenied, psutil.ZombieProcess,psutil.NoSuchProcess):
+            pass
+    
+    return arquivos_abertos_total
 
 coletores = {
 "cpu_percent": coletar_cpu_percent,
@@ -335,8 +345,8 @@ coletores = {
 "total_conexoes": coletar_total_conexoes,
 "bateria_percent": coletar_bateria_percent,
 "bateria_plugada": coletar_bateria_plugada,
-"bateria_segundos_restantes": coletar_bateria_segundos_restantes
-
+"bateria_segundos_restantes": coletar_bateria_segundos_restantes,
+"arquivos_abertos": coletar_arquivos_abertos
 }
 
 resultados = {
@@ -404,7 +414,8 @@ resultados = {
 "total_conexoes":"",
 "bateria_percent":"",
 "bateria_plugada":"",
-"bateria_segundos_restantes":""
+"bateria_segundos_restantes":"",
+"arquivos_abertos":""
 
 }
 
@@ -428,7 +439,7 @@ def escrita():
             writer = csv.writer(file, delimiter=";")
             writer.writerow(cabecalho)
 
-    for i in range(10):    
+    while (True):    
 
         print(os.path.exists(raw_csv))
 
@@ -471,10 +482,10 @@ def escrita():
                 leitor = csv.reader(f)
                 num_linhas = sum(1 for row in leitor)
 
-            # if(num_linhas == 11):
+            if(num_linhas == 11):
 
-            #     client.upload_file(raw_csv,bucket,f"raw/{raw_csv}")
-            #     os.remove(raw_csv)
+                client.upload_file(raw_csv,bucket,f"raw/{raw_csv}")
+                os.remove(raw_csv)
 
             time.sleep(5)
     
@@ -490,14 +501,5 @@ net_errin_global = psutil.net_io_counters().errin
 net_errout_global = psutil.net_io_counters().errout
 net_dropin_global = psutil.net_io_counters().dropin
 net_dropout_global = psutil.net_io_counters().dropout
-      
-while True:
-        try:
-        
-            lista_nomes = [] 
-            escrita()
 
-        except Exception as e:
-            print(f"Erro no ciclo de captura: {e}")
-            
-            time.sleep(10) 
+escrita()
