@@ -205,7 +205,7 @@ def lambda_handler(event, context):
             return 'Alerta'
 
 
-    headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","top_3_processos_cpu","top_3_processos_disco","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_recv","net_packets_recv","net_packets_sent","net_dropin","net_dropout","usuarios_logados","virtual_memory_status","cpu_percent_status","disk_percent_status","net_errors"]
+    headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","top_3_processos_cpu","top_3_processos_disco","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_recv","net_packets_recv","net_packets_sent","net_dropin","net_dropout","usuarios_logados","virtual_memory_status","cpu_percent_status","disk_percent_status","net_errors","total_arquivos_abertos"]
 
     novasLinhas = []
 
@@ -254,8 +254,8 @@ def lambda_handler(event, context):
                         dado["df"]["cpu_percent"].max(),
                         dado["df"]["cpu_time_user"].sum(),
                         dado["df"]["cpu_ctx_switches"].sum(),
-                        dado["df"]["top_3_processos_cpu"],
-                        dado["df"]["top_3_processos_disco"],
+                        dado["df"]["top_3_processos_cpu"].str.cat(", "),
+                        dado["df"]["top_3_processos_disco"].str.cat(", "),
                         str(dado["df"]["total_processos"].sum()),
                         str(dado["df"]["virtual_memory_usage"].max()),
                         str(dado["df"]["disk_read_kbps"].max()),
@@ -267,6 +267,7 @@ def lambda_handler(event, context):
                         dado["df"]["net_dropin"].sum(),
                         dado["df"]["net_dropout"].sum(),
                         dado["df"]["usuarios_logados"].sum(),
+                        dado["df"]["arquivos_abertos"].sum(),
                         str_virtual_memory_status,
                         str_cpu_percent_status,
                         str_disk_percent_status,
