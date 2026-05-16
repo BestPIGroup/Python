@@ -428,7 +428,7 @@ def escrita():
             writer = csv.writer(file, delimiter=";")
             writer.writerow(cabecalho)
 
-    while True:    
+    for i in range(10):    
 
         print(os.path.exists(raw_csv))
 
@@ -490,6 +490,14 @@ net_errin_global = psutil.net_io_counters().errin
 net_errout_global = psutil.net_io_counters().errout
 net_dropin_global = psutil.net_io_counters().dropin
 net_dropout_global = psutil.net_io_counters().dropout
-
-escrita()
+      
+while True:
+        try:
         
+            lista_nomes = [] 
+            escrita()
+
+        except Exception as e:
+            print(f"Erro no ciclo de captura: {e}")
+            
+            time.sleep(10) 
