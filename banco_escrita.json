@@ -20,21 +20,15 @@
       "biblioteca": "psutil",
       "parametros": {},
       "servidor_id_servidor": 1
-    },{"nome": "processo_pid_max_cpu",
+    },{"nome": "top_3_processos_cpu",
       "tipo": "process",
-      "unidade_medida": "id",
+      "unidade_medida": "list",
       "biblioteca": "psutil",
       "parametros": {},
       "servidor_id_servidor": 1
-    },{"nome": "processo_name_max_cpu",
+    },{"nome": "top_3_processos_disco",
       "tipo": "process",
-      "unidade_medida": "nome",
-      "biblioteca": "psutil",
-      "parametros": {},
-      "servidor_id_servidor": 1
-    },{"nome": "processo_cpu_percent_max_cpu",
-      "tipo": "process",
-      "unidade_medida": "porcentagem",
+      "unidade_medida": "list",
       "biblioteca": "psutil",
       "parametros": {},
       "servidor_id_servidor": 1

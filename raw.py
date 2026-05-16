@@ -8,16 +8,16 @@ from datetime import datetime
 from getmac import get_mac_address
 from dotenv import load_dotenv
 
-load_dotenv()
+# load_dotenv()
 
-client = boto3.client(
-    "s3",
-    aws_access_key_id=os.getenv("aws_access_key_id"),
-    aws_secret_access_key=os.getenv("aws_secret_access_key"),
-    aws_session_token=os.getenv("aws_session_token")
-)
+# client = boto3.client(
+#     "s3",
+#     aws_access_key_id=os.getenv("aws_access_key_id"),
+#     aws_secret_access_key=os.getenv("aws_secret_access_key"),
+#     aws_session_token=os.getenv("aws_session_token")
+# )
 
-bucket = os.getenv("bucket")
+# bucket = os.getenv("bucket")
 
 with open("banco_escrita.json", "r", encoding="utf-8") as file:
     dados = json.load(file)
@@ -213,21 +213,37 @@ def coletar_net_dropout(parametros):
     return resposta
 def coletar_total_processos(parametros):
     return round(len(psutil.pids()),2)
-def coletar_processo_pid_max_cpu(parametros):
+def coletar_top_3_processos_cpu(parametros):
     for p in psutil.process_iter(['cpu_percent']):
         p.info['cpu_percent']
     time.sleep(0.1)
     processos = list(psutil.process_iter(['pid', 'name', 'cpu_percent']))
-    top_cpu = max(processos, key=lambda p: p.info['cpu_percent'])
-    return top_cpu.info['pid']
-def coletar_processo_name_max_cpu(parametros):
-    top_cpu = max(psutil.process_iter(['pid', 'name', 'cpu_percent']), 
-              key=lambda p: p.info['cpu_percent'])
-    return top_cpu.info['name']
-def coletar_processo_cpu_percent_max_cpu(parametros):
-    top_cpu = max(psutil.process_iter(['pid', 'name', 'cpu_percent']), 
-              key=lambda p: p.info['cpu_percent'])
-    return (top_cpu.info['cpu_percent'])/(psutil.cpu_count())
+    processos_ordenados = sorted(processos, key=lambda p: p.info['cpu_percent'] or 0, reverse=True)
+    matriz_top3 = [[p.info['pid'], p.info['name'], p.info['cpu_percent']] for p in processos_ordenados[:3]]    
+    return matriz_top3
+def coletar_top_3_processos_disco(parametros):
+    for p in psutil.process_iter(['io_counters']):
+        p.info['io_counters']
+    time.sleep(0.1)
+    
+    processos = list(psutil.process_iter(['pid', 'name', 'io_counters']))
+    
+    processos_ordenados = sorted(
+        processos, 
+        key=lambda p: p.info['io_counters'].write_bytes if p.info['io_counters'] else 0, 
+        reverse=True
+    )
+    
+    matriz_top3 = [
+        [
+            p.info['pid'], 
+            p.info['name'], 
+            p.info['io_counters'].write_bytes if p.info['io_counters'] else 0
+        ] 
+        for p in processos_ordenados[:3]
+    ]
+    
+    return matriz_top3
 def coletar_usuarios_logados(parametros):
     return round(len(psutil.users()),2)
 def coletar_boot_time(parametros):
@@ -308,9 +324,8 @@ coletores = {
 "net_dropin": coletar_net_dropin,
 "net_dropout": coletar_net_dropout,
 "total_processos": coletar_total_processos,
-"processo_pid_max_cpu": coletar_processo_pid_max_cpu,
-"processo_name_max_cpu": coletar_processo_name_max_cpu,
-"processo_cpu_percent_max_cpu": coletar_processo_cpu_percent_max_cpu,
+"top_3_processos_cpu": coletar_top_3_processos_cpu,
+"top_3_processos_disco": coletar_top_3_processos_disco,
 "usuarios_logados": coletar_usuarios_logados,
 "boot_time": coletar_boot_time,
 "uptime_segundos": coletar_uptime_segundos,
@@ -378,9 +393,8 @@ resultados = {
 "net_dropin":"",
 "net_dropout":"",
 "total_processos":"",
-"processo_pid_max_cpu":"",
-"processo_name_max_cpu":"",
-"processo_cpu_percent_max_cpu":"",
+"top_3_processos_cpu":"",
+"top_3_processos_disco":"",
 "usuarios_logados":"",
 "boot_time":"",
 "uptime_segundos":"",
@@ -457,10 +471,10 @@ def escrita():
                 leitor = csv.reader(f)
                 num_linhas = sum(1 for row in leitor)
 
-            if(num_linhas == 11):
+            # if(num_linhas == 11):
 
-                client.upload_file(raw_csv,bucket,f"raw/{raw_csv}")
-                os.remove(raw_csv)
+            #     client.upload_file(raw_csv,bucket,f"raw/{raw_csv}")
+            #     os.remove(raw_csv)
 
             time.sleep(5)
     
