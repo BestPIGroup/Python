@@ -135,10 +135,9 @@ leitura['timestamp'] = pd.to_datetime(leitura['timestamp'], format='%Y-%m-%d %H:
 leitura['timestamp'] = leitura['timestamp'].dt.strftime('%d/%m/%Y %H:%M:%S')
 
 leitura = leitura.reindex(columns=['user', 'id_mac', 'timestamp', 'cpu_percent', 'cpu_time_user', 'cpu_ctx_switches', 
-                                   'processo_pid_max_cpu', 'processo_name_max_cpu', 'processo_cpu_percent_max_cpu', 
-                                   'total_processos', 'virtual_memory_usage', 'disk_read_kbps', 'disk_write_kbps',
-                                   'disk_percent', 'net_kbps_recv', 'net_packets_sent', 'net_packets_recv', 
-                                   'net_errin', 'net_errout', 'net_dropin', 'net_dropout', 'usuarios_logados'])
+                                   'top_3_processos_cpu', 'top_3_processos_disco', 'total_processos', 'virtual_memory_usage', 
+                                   'disk_read_kbps', 'disk_write_kbps', 'disk_percent', 'net_kbps_recv', 'net_packets_sent', 
+                                   'net_packets_recv', 'net_errin', 'net_errout', 'net_dropin', 'net_dropout', 'usuarios_logados'])
     
 try:
 
@@ -166,7 +165,7 @@ except ClientError as e:
 
         os.remove(trusted_csv)
 
-headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","processos_pids_max_cpu","processos_names_max_cpu","processos_cpu_percent_max_cpu","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_recv","net_packets_recv","net_dropin","net_dropout","usuarios_logados"]
+headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","top_3_processos_cpu","top_3_processos_disco","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_recv","net_packets_recv","net_dropin","net_dropout","usuarios_logados"]
 
 listaMacs = []
 
@@ -207,7 +206,7 @@ def categorizar(valor):
         return 'Alerta'
 
 
-headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","processos_pids_max_cpu","processos_names_max_cpu","processos_cpu_percent_max_cpu","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_recv","net_packets_recv","net_packets_sent","net_dropin","net_dropout","usuarios_logados","virtual_memory_status","cpu_percent_status","disk_percent_status","net_errors"]
+headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","top_3_processos_cpu","top_3_processos_disco","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_recv","net_packets_recv","net_packets_sent","net_dropin","net_dropout","usuarios_logados","virtual_memory_status","cpu_percent_status","disk_percent_status","net_errors"]
 
 novasLinhas = []
 
@@ -256,9 +255,8 @@ for dado in dados:
                         dado["df"]["cpu_percent"].max(),
                         dado["df"]["cpu_time_user"].sum(),
                         dado["df"]["cpu_ctx_switches"].sum(),
-                        dado["df"]["processo_pid_max_cpu"].unique().tolist(),
-                        dado["df"]["processo_name_max_cpu"].unique().tolist(),
-                        dado["df"].groupby("processo_name_max_cpu")["processo_cpu_percent_max_cpu"].max().to_dict(),
+                        dado["df"]["top_3_processos_cpu"],
+                        dado["df"]["top_3_processos_disco"],
                         str(dado["df"]["total_processos"].sum()),
                         str(dado["df"]["virtual_memory_usage"].max()),
                         str(dado["df"]["disk_read_kbps"].max()),
