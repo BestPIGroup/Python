@@ -17,6 +17,9 @@ def lambda_handler(event, context):
 
     def pesquisarComponente(nome,mac):
 
+        db = None
+        cursor = None
+
         try:
 
             db = mysql.connector.connect(
@@ -28,8 +31,19 @@ def lambda_handler(event, context):
 
             cursor = db.cursor()
 
+            query = """
+            SELECT 
+                cs.limite_componente,
+                c.nome AS nome_componente
+            FROM componente_servidor cs
+            JOIN servidor s 
+                    ON cs.id_servidor = s.id_servidor
+            JOIN componente c 
+                    ON cs.id_componente = c.id_componente
+            WHERE s.endereco_mac = %s;
+            """
 
-            cursor.execute(f"SELECT cs.limite_componente, c.nome AS nome_componente FROM componente_servidor cs JOIN servidor s ON cs.id_servidor = s.id_servidor JOIN componente c ON cs.id_componente = c.id_componente WHERE s.endereco_mac = '{mac}';")
+            cursor.execute(query, (mac,))
 
             res = cursor.fetchall()
 
@@ -43,16 +57,40 @@ def lambda_handler(event, context):
                     "limite" : i[0]
 
                 })
+
+        except Exception as e:
+        
+            print("Erro ao conectar no banco:", e)
+            return 0
+        
         finally:
-            if db.is_connected():
+
+            if cursor is not None:
                 cursor.close()
+
+            if db is not None and db.is_connected():
                 db.close()
 
 
-        print (limites)
-        print(next((limite for limite in limites if limite["componente"] == nome), None)["limite"])
+        # print (limites)
+        # print(next((limite for limite in limites if limite["componente"] == nome), None)["limite"])
 
-        return next((limite for limite in limites if limite["componente"] == nome), None)["limite"]
+        # return next((limite for limite in limites if limite["componente"] == nome), None)["limite"]
+    
+        resultado = next(
+            (limite for limite in limites if limite["componente"] == nome),
+            None
+        )
+
+        print("Resultado encontrado:", resultado)
+
+        if resultado is None:
+
+            print(f"Componente '{nome}' não encontrado para MAC {mac}")
+
+            return 0
+
+        return resultado["limite"]
 
     def conversao_kb(valor: int):
         return round(valor/(1024), 2)
@@ -126,10 +164,10 @@ def lambda_handler(event, context):
 
     leitura.rename(columns={'disk_read_bytes' : 'disk_read_kbps', 'disk_write_bytes' : 'disk_write_kbps','net_bytes_sent' : 'net_kbps_sent', 'net_bytes_recv' : 'net_kbps_recv'}, inplace=True)
 
-    leitura['disk_read_kbps']=conversao_kb(leitura['disk_read_kbps']/5)
-    leitura['disk_write_kbps']=conversao_kb(leitura['disk_write_kbps']/5)
-    leitura['net_kbps_sent']=conversao_kb(leitura['net_kbps_sent']/5)
-    leitura['net_kbps_recv']=conversao_kb(leitura['net_kbps_recv']/5)
+    leitura['disk_read_kbps']=conversao_kb(leitura['disk_read_bytes']/5)
+    leitura['disk_write_kbps']=conversao_kb(leitura['disk_write_bytes']/5)
+    leitura['net_kbps_sent']=conversao_kb(leitura['net_bytes_sent']/5)
+    leitura['net_kbps_recv']=conversao_kb(leitura['net_bytes_recv']/5)
 
     leitura['timestamp'] = pd.to_datetime(leitura['timestamp'], format='%Y-%m-%d %H:%M:%S')
     leitura['timestamp'] = leitura['timestamp'].dt.strftime('%d/%m/%Y %H:%M:%S')
@@ -211,11 +249,11 @@ def lambda_handler(event, context):
 
     for dado in dados:
         
-        dado["df"]["virtual_memory_status"] = np.where(dado["df"]['virtual_memory_usage'] >= pesquisarComponente("Memória Usada (%)",dado["mac"]),"Normal","Alerta" )
+        dado["df"]["virtual_memory_status"] = np.where(dado["df"]['virtual_memory_usage'] < pesquisarComponente("Memória Usada (%)",dado["mac"]),"Normal","Alerta" )
 
-        dado["df"]["cpu_percent_status"] = np.where(dado["df"]['cpu_percent'] >= pesquisarComponente("Uso de CPU (%)",dado["mac"]),"Normal","Alerta" )
+        dado["df"]["cpu_percent_status"] = np.where(dado["df"]['cpu_percent'] < pesquisarComponente("Uso de CPU (%)",dado["mac"]),"Normal","Alerta" )
 
-        dado["df"]["disk_percent_status"] = np.where(dado["df"]["disk_percent"] >= pesquisarComponente("Memória Usada (%)",dado["mac"]),"Normal","Alerta" )
+        dado["df"]["disk_percent_status"] = np.where(dado["df"]["disk_percent"] < pesquisarComponente("Uso de Disco (%)",dado["mac"]),"Normal","Alerta" )
         
         #if dado["df"]['virtual_memory_usage'] < pesquisarComponente("Memória Usada (%)",dado["mac"]):
         #    dado["df"]["virtual_memory_status"] = "Normal"
