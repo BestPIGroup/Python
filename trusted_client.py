@@ -17,9 +17,6 @@ def lambda_handler(event, context):
 
     def pesquisarComponente(nome,mac):
 
-        db = None
-        cursor = None
-
         try:
 
             db = mysql.connector.connect(
@@ -31,19 +28,8 @@ def lambda_handler(event, context):
 
             cursor = db.cursor()
 
-            query = """
-            SELECT 
-                cs.limite_componente,
-                c.nome AS nome_componente
-            FROM componente_servidor cs
-            JOIN servidor s 
-                    ON cs.id_servidor = s.id_servidor
-            JOIN componente c 
-                    ON cs.id_componente = c.id_componente
-            WHERE s.endereco_mac = %s;
-            """
 
-            cursor.execute(query, (mac,))
+            cursor.execute(f"SELECT cs.limite_componente, c.nome AS nome_componente FROM componente_servidor cs JOIN servidor s ON cs.id_servidor = s.id_servidor JOIN componente c ON cs.id_componente = c.id_componente WHERE s.endereco_mac = '{mac}';")
 
             res = cursor.fetchall()
 
@@ -57,42 +43,18 @@ def lambda_handler(event, context):
                     "limite" : i[0]
 
                 })
-
-        except Exception as e:
-        
-            print("Erro ao conectar no banco:", e)
-            return 0
-        
         finally:
-
-            if cursor is not None:
+            if db.is_connected():
                 cursor.close()
-
-            if db is not None and db.is_connected():
                 db.close()
 
 
-        # print (limites)
-        # print(next((limite for limite in limites if limite["componente"] == nome), None)["limite"])
+        print (limites)
+        print(next((limite for limite in limites if limite["componente"] == nome), None)["limite"])
 
-        # return next((limite for limite in limites if limite["componente"] == nome), None)["limite"]
-    
-        resultado = next(
-            (limite for limite in limites if limite["componente"] == nome),
-            None
-        )
+        return next((limite for limite in limites if limite["componente"] == nome), None)["limite"]
 
-        print("Resultado encontrado:", resultado)
-
-        if resultado is None:
-
-            print(f"Componente '{nome}' não encontrado para MAC {mac}")
-
-            return 0
-
-        return resultado["limite"]
-
-    def conversao_kb(valor: int):
+    def conversao_kb(valor):
         return round(valor/(1024), 2)
 
     paginator = client.get_paginator('list_objects_v2')
@@ -158,16 +120,16 @@ def lambda_handler(event, context):
     
     leitura = leitura.reindex(columns=['user', 'id_mac', 'timestamp', 'cpu_percent', 'cpu_time_user', 'cpu_ctx_switches', 
                                    'top_3_processos_cpu', 'top_3_processos_disco', 'total_processos', 'virtual_memory_usage', 
-                                   'disk_read_kbps', 'disk_write_kbps', 'disk_percent', 'net_kbps_recv', 'net_packets_sent', 
-                                   'net_packets_recv', 'net_errin', 'net_errout', 'net_dropin', 'net_dropout', 'usuarios_logados'])
+                                   'disk_read_bytes', 'disk_write_bytes', 'disk_percent', 'net_bytes_recv', 'net_bytes_sent', "net_packets_sent",
+                                   'net_packets_recv', 'net_errin', 'net_errout', 'net_dropin', 'net_dropout', 'usuarios_logados',"arquivos_abertos"])
     
 
     leitura.rename(columns={'disk_read_bytes' : 'disk_read_kbps', 'disk_write_bytes' : 'disk_write_kbps','net_bytes_sent' : 'net_kbps_sent', 'net_bytes_recv' : 'net_kbps_recv'}, inplace=True)
 
-    leitura['disk_read_kbps']=conversao_kb(leitura['disk_read_bytes']/5)
-    leitura['disk_write_kbps']=conversao_kb(leitura['disk_write_bytes']/5)
-    leitura['net_kbps_sent']=conversao_kb(leitura['net_bytes_sent']/5)
-    leitura['net_kbps_recv']=conversao_kb(leitura['net_bytes_recv']/5)
+    leitura['disk_read_kbps']=conversao_kb(leitura['disk_read_kbps']/5)
+    leitura['disk_write_kbps']=conversao_kb(leitura['disk_write_kbps']/5)
+    leitura['net_kbps_sent']=conversao_kb(leitura['net_kbps_sent']/5)
+    leitura['net_kbps_recv']=conversao_kb(leitura['net_kbps_recv']/5)
 
     leitura['timestamp'] = pd.to_datetime(leitura['timestamp'], format='%Y-%m-%d %H:%M:%S')
     leitura['timestamp'] = leitura['timestamp'].dt.strftime('%d/%m/%Y %H:%M:%S')
@@ -179,12 +141,13 @@ def lambda_handler(event, context):
         trusted = client.get_object(Bucket = bucket, Key = "trusted/trusted.csv")
 
         trusted_existente = pd.read_csv(
-            StringIO(trusted["Body"].read().decode("utf-8"))
+            StringIO(trusted["Body"].read().decode("utf-8")),
+            sep = ";"
         )
 
         trusted_final = pd.concat([trusted_existente, leitura], ignore_index=True)
 
-        trusted_final.to_csv(trusted_csv_buffer, index=False)
+        trusted_final.to_csv(trusted_csv_buffer, index=False,sep = ";")
 
         client.put_object(
             Bucket=bucket,
@@ -196,7 +159,7 @@ def lambda_handler(event, context):
         
         if e.response['Error']['Code'] == "NoSuchKey":
 
-            leitura.to_csv(trusted_csv_buffer, index=False)
+            leitura.to_csv(trusted_csv_buffer, index=False, sep = ";")
 
             client.put_object(
                 Bucket=bucket,
@@ -205,10 +168,6 @@ def lambda_handler(event, context):
             )
 
     listaMacs = []
-
-    for row in leitura:
-
-        print(row)
 
     for index, row in leitura.iterrows():
 
@@ -243,32 +202,23 @@ def lambda_handler(event, context):
             return 'Alerta'
 
 
-    headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","top_3_processos_cpu","top_3_processos_disco","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_recv","net_packets_recv","net_packets_sent","net_dropin","net_dropout","usuarios_logados","virtual_memory_status","cpu_percent_status","disk_percent_status","net_errors","total_arquivos_abertos"]
+    headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","top_3_processos_cpu","top_3_processos_disco","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_sent","net_kbps_recv","net_packets_sent","net_packets_recv","net_dropin","net_dropout","usuarios_logados","virtual_memory_status","cpu_percent_status","disk_percent_status","net_errors","total_arquivos_abertos","mediana_net_sent","mediana_net_recv"]
 
     novasLinhas = []
 
     for dado in dados:
         
-        dado["df"]["virtual_memory_status"] = np.where(dado["df"]['virtual_memory_usage'] < pesquisarComponente("Memória Usada (%)",dado["mac"]),"Normal","Alerta" )
+        moda_sent = dado["df"]["net_kbps_sent"].mode()
+        moda_recv = dado["df"]["net_kbps_recv"].mode()
 
-        dado["df"]["cpu_percent_status"] = np.where(dado["df"]['cpu_percent'] < pesquisarComponente("Uso de CPU (%)",dado["mac"]),"Normal","Alerta" )
+        moda_sent = moda_sent.iloc[0] if not moda_sent.empty else 0
+        moda_recv = moda_recv.iloc[0] if not moda_recv.empty else 0
 
-        dado["df"]["disk_percent_status"] = np.where(dado["df"]["disk_percent"] < pesquisarComponente("Uso de Disco (%)",dado["mac"]),"Normal","Alerta" )
-        
-        #if dado["df"]['virtual_memory_usage'] < pesquisarComponente("Memória Usada (%)",dado["mac"]):
-        #    dado["df"]["virtual_memory_status"] = "Normal"
-        #else:
-        #    dado["df"]["virtual_memory_status"] = "Alerta"
+        dado["df"]["virtual_memory_status"] = np.where(dado["df"]['virtual_memory_usage'] >= pesquisarComponente("Memória Usada (%)",dado["mac"]),"Alerta","Normal")
 
-        #if dado["df"]['cpu_percent'] < pesquisarComponente("Uso de CPU (%)",dado["mac"]):
-        #    dado["df"]["cpu_percent_status"] = "Normal"
-        #else:
-        #    dado["df"]["cpu_percent_status"] = "Alerta"
+        dado["df"]["cpu_percent_status"] = np.where(dado["df"]['cpu_percent'] >= pesquisarComponente("Uso de CPU (%)",dado["mac"]),"Alerta","Normal")
 
-        #if dado["df"]['disk_percent'] < pesquisarComponente("Uso de Disco (%)",dado["mac"]):
-        #    dado["df"]["disk_percent_status"] = "Normal"
-        #else:
-        #    dado["df"]["disk_percent_status"] = "Alerta"
+        dado["df"]["disk_percent_status"] = np.where(dado["df"]["disk_percent"] >= pesquisarComponente("Memória Usada (%)",dado["mac"]),"Alerta","Normal")
 
         dado["df"]['net_errors'] = (dado["df"]['net_errin'] + dado["df"]['net_errout'] + dado["df"]['net_dropin'] + dado["df"]['net_dropout']).apply(categorizar)
 
@@ -292,24 +242,27 @@ def lambda_handler(event, context):
                         dado["df"]["cpu_percent"].max(),
                         dado["df"]["cpu_time_user"].sum(),
                         dado["df"]["cpu_ctx_switches"].sum(),
-                        dado["df"]["top_3_processos_cpu"].str.cat(", "),
-                        dado["df"]["top_3_processos_disco"].str.cat(", "),
+                        dado["df"]["top_3_processos_cpu"].str.cat(sep=", "),
+                        dado["df"]["top_3_processos_disco"].str.cat(sep=", "),
                         str(dado["df"]["total_processos"].sum()),
                         str(dado["df"]["virtual_memory_usage"].max()),
                         str(dado["df"]["disk_read_kbps"].max()),
                         str(dado["df"]['disk_percent'].max()),
                         str(dado["df"]["disk_write_kbps"].max()),
+                        str(dado["df"]["net_kbps_sent"].max()),
                         str(dado["df"]["net_kbps_recv"].max()),
-                        dado["df"]["net_packets_sent"].max(),
-                         dado["df"]["net_packets_sent"].max(),
+                        dado["df"]["net_packets_sent"].sum(),
+                        dado["df"]["net_packets_recv"].sum(),
                         dado["df"]["net_dropin"].sum(),
                         dado["df"]["net_dropout"].sum(),
                         dado["df"]["usuarios_logados"].sum(),
-                        dado["df"]["arquivos_abertos"].sum(),
                         str_virtual_memory_status,
                         str_cpu_percent_status,
                         str_disk_percent_status,
-                        str_net_errors])
+                        str_net_errors,
+                        dado["df"]["arquivos_abertos"].sum(),
+                        moda_sent,
+                        moda_recv])
 
     clientDf = pd.DataFrame(novasLinhas, columns=headersClient)
 
