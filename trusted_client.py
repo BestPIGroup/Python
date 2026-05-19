@@ -253,22 +253,30 @@ def lambda_handler(event, context):
 
         dado["df"]["cpu_percent_status"] = np.where(dado["df"]['cpu_percent'] < pesquisarComponente("Uso de CPU (%)",dado["mac"]),"Normal","Alerta" )
 
+<<<<<<< Updated upstream
         dado["df"]["disk_percent_status"] = np.where(dado["df"]["disk_percent"] < pesquisarComponente("Uso de Disco (%)",dado["mac"]),"Normal","Alerta" )
         
         #if dado["df"]['virtual_memory_usage'] < pesquisarComponente("Memória Usada (%)",dado["mac"]):
         #    dado["df"]["virtual_memory_status"] = "Normal"
         #else:
         #    dado["df"]["virtual_memory_status"] = "Alerta"
+=======
+        dado["df"]["virtual_memory_status"] = np.where(dado["df"]['virtual_memory_usage'] >= pesquisarComponente("Memoria Usada (%)",dado["mac"]),"Alerta","Normal")
+>>>>>>> Stashed changes
 
         #if dado["df"]['cpu_percent'] < pesquisarComponente("Uso de CPU (%)",dado["mac"]):
         #    dado["df"]["cpu_percent_status"] = "Normal"
         #else:
         #    dado["df"]["cpu_percent_status"] = "Alerta"
 
+<<<<<<< Updated upstream
         #if dado["df"]['disk_percent'] < pesquisarComponente("Uso de Disco (%)",dado["mac"]):
         #    dado["df"]["disk_percent_status"] = "Normal"
         #else:
         #    dado["df"]["disk_percent_status"] = "Alerta"
+=======
+        dado["df"]["disk_percent_status"] = np.where(dado["df"]["disk_percent"] >= pesquisarComponente("Uso de Disco (%)",dado["mac"]),"Alerta","Normal")
+>>>>>>> Stashed changes
 
         dado["df"]['net_errors'] = (dado["df"]['net_errin'] + dado["df"]['net_errout'] + dado["df"]['net_dropin'] + dado["df"]['net_dropout']).apply(categorizar)
 
