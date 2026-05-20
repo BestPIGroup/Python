@@ -60,7 +60,6 @@ def lambda_handler(event, context):
     paginator = client.get_paginator('list_objects_v2')
     lista_raws = []
 
-
     for page in paginator.paginate(Bucket=bucket, Prefix="raw/"):
 
         if "Contents" not in page:
