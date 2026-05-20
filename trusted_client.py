@@ -60,7 +60,6 @@ def lambda_handler(event, context):
     paginator = client.get_paginator('list_objects_v2')
     lista_raws = []
 
-
     for page in paginator.paginate(Bucket=bucket, Prefix="raw/"):
 
         if "Contents" not in page:
@@ -214,11 +213,11 @@ def lambda_handler(event, context):
         moda_sent = moda_sent.iloc[0] if not moda_sent.empty else 0
         moda_recv = moda_recv.iloc[0] if not moda_recv.empty else 0
 
-        dado["df"]["virtual_memory_status"] = np.where(dado["df"]['virtual_memory_usage'] >= pesquisarComponente("Memória Usada (%)",dado["mac"]),"Alerta","Normal")
+        dado["df"]["virtual_memory_status"] = np.where(dado["df"]['virtual_memory_usage'] >= pesquisarComponente("Memoria Usada (%)",dado["mac"]),"Alerta","Normal")
 
         dado["df"]["cpu_percent_status"] = np.where(dado["df"]['cpu_percent'] >= pesquisarComponente("Uso de CPU (%)",dado["mac"]),"Alerta","Normal")
 
-        dado["df"]["disk_percent_status"] = np.where(dado["df"]["disk_percent"] >= pesquisarComponente("Memória Usada (%)",dado["mac"]),"Alerta","Normal")
+        dado["df"]["disk_percent_status"] = np.where(dado["df"]["disk_percent"] >= pesquisarComponente("Memoria Usada (%)",dado["mac"]),"Alerta","Normal")
 
         dado["df"]['net_errors'] = (dado["df"]['net_errin'] + dado["df"]['net_errout'] + dado["df"]['net_dropin'] + dado["df"]['net_dropout']).apply(categorizar)
 
