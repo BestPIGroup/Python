@@ -8,6 +8,7 @@ from datetime import datetime
 import boto3
 from botocore.exceptions import ClientError
 import numpy as np
+import json
 
 client = boto3.client("s3")
 
@@ -118,7 +119,7 @@ def lambda_handler(event, context):
 
     leitura.drop(columns=['virtual_memory_total', 'virtual_memory_available'], inplace=True)
     
-    leitura = leitura.reindex(columns=['user', 'id_mac', 'timestamp', 'cpu_percent', 'cpu_time_user', 'cpu_ctx_switches', 
+    leitura = leitura.reindex(columns=['user', 'id_mac', 'timestamp', 'cpu_percent',                      'cpu_time_user',               'cpu_ctx_switches', 
                                    'top_3_processos_cpu', 'top_3_processos_disco', 'total_processos', 'virtual_memory_usage', 
                                    'disk_read_bytes', 'disk_write_bytes', 'disk_percent', 'net_bytes_recv', 'net_bytes_sent', "net_packets_sent",
                                    'net_packets_recv', 'net_errin', 'net_errout', 'net_dropin', 'net_dropout', 'usuarios_logados',"arquivos_abertos"])
@@ -203,8 +204,18 @@ def lambda_handler(event, context):
 
 
     headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","top_3_processos_cpu","top_3_processos_disco","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_sent","net_kbps_recv","net_packets_sent","net_packets_recv","net_dropin","net_dropout","usuarios_logados","virtual_memory_status","cpu_percent_status","disk_percent_status","net_errors","total_arquivos_abertos","mediana_net_sent","mediana_net_recv"]
+    headersClientGestor = ["timestamp","mac","alerta"]
 
     novasLinhas = []
+    novasLinhasGestor = []
+
+    # Variaveis de alertas:
+    alertaRAM = False
+    alertaCPU = False
+    alertaDisco = False
+    alertaProcessos = False
+    alertaRede = False
+    mensagensAlertas = []
 
     for dado in dados:
         
@@ -216,15 +227,33 @@ def lambda_handler(event, context):
 
         dado["df"]["virtual_memory_status"] = np.where(dado["df"]['virtual_memory_usage'] >= pesquisarComponente("Memória Usada (%)",dado["mac"]),"Alerta","Normal")
 
+        if(dado["df"]["virtual_memory_status"] == "Alerta"):
+            alertaRAM = True
+            mensagensAlertas.append({"RAM": "Alto uso da RAM"})
+
+
         dado["df"]["cpu_percent_status"] = np.where(dado["df"]['cpu_percent'] >= pesquisarComponente("Uso de CPU (%)",dado["mac"]),"Alerta","Normal")
+
+        if(dado["df"]["cpu_percent_status"] == "Alerta"):
+            alertaCPU = True
+            mensagensAlertas.append({"CPU": "Alto uso da CPU"})
 
         dado["df"]["disk_percent_status"] = np.where(dado["df"]["disk_percent"] >= pesquisarComponente("Memória Usada (%)",dado["mac"]),"Alerta","Normal")
 
+        if(dado["df"]["disk_percent_status"] == "Alerta"):
+            alertaDisco = True
+            mensagensAlertas.append({"DISCO": "Disco próximo da sua capacidade máxima"})
+
         dado["df"]['net_errors'] = (dado["df"]['net_errin'] + dado["df"]['net_errout'] + dado["df"]['net_dropin'] + dado["df"]['net_dropout']).apply(categorizar)
+
+        if(dado["df"]['net_errors'] == "Alerta"):
+            alertaRede = True
+            mensagensAlertas.append({"REDE": "Requisição negada por motivo desconhecido"})
 
         print(dado["df"]['disk_percent'])
 
         dict_virtual_memory_status = dado["df"]['virtual_memory_status'].value_counts().to_dict()
+
         str_virtual_memory_status = ", ".join([f"{word}: {count}" for word, count in dict_virtual_memory_status.items()])
 
         dict_cpu_percent_status = dado["df"]['cpu_percent_status'].value_counts().to_dict()
@@ -235,7 +264,7 @@ def lambda_handler(event, context):
         
         dict_net_errors = dado["df"]['net_errors'].value_counts().to_dict()
         str_net_errors = ", ".join([f"{word}: {count}" for word, count in dict_net_errors.items()])
-
+        
         novasLinhas.append([dado["mac"],
                         dado["df"]['user'].unique().tolist(),
                         datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
