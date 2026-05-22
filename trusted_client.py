@@ -204,20 +204,20 @@ def lambda_handler(event, context):
 
 
     headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","top_3_processos_cpu","top_3_processos_disco","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_sent","net_kbps_recv","net_packets_sent","net_packets_recv","net_dropin","net_dropout","usuarios_logados","virtual_memory_status","cpu_percent_status","disk_percent_status","net_errors","total_arquivos_abertos","mediana_net_sent","mediana_net_recv"]
-    headersClientGestor = ["timestamp","mac","alerta"]
 
     novasLinhas = []
-    novasLinhasGestor = []
+    novasLinhasAlertas = []
 
     # Variaveis de alertas:
-    alertaRAM = False
-    alertaCPU = False
-    alertaDisco = False
-    alertaProcessos = False
-    alertaRede = False
-    mensagensAlertas = []
+
 
     for dado in dados:
+        alertaRAM = False
+        alertaCPU = False
+        alertaDisco = False
+        alertaProcessos = False
+        alertaRede = False
+        mensagensAlerta = []
         
         moda_sent = dado["df"]["net_kbps_sent"].mode()
         moda_recv = dado["df"]["net_kbps_recv"].mode()
@@ -237,6 +237,8 @@ def lambda_handler(event, context):
         if(dado["df"]["cpu_percent_status"] == "Alerta"):
             alertaCPU = True
             mensagensAlertas.append({"CPU": "Alto uso da CPU"})
+
+        dado["df"]["cpu_ctx_switches"] = np.where(dado["df"]["cpu_ctx_switches"] >= pesquisarComponente)
 
         dado["df"]["disk_percent_status"] = np.where(dado["df"]["disk_percent"] >= pesquisarComponente("Memória Usada (%)",dado["mac"]),"Alerta","Normal")
 
@@ -292,9 +294,13 @@ def lambda_handler(event, context):
                         dado["df"]["arquivos_abertos"].sum(),
                         moda_sent,
                         moda_recv])
+        if(alertaCPU == True and )
+
+        if(alertaCPU == True or alertaDisco == True or alertaRAM == True or alertaRede == True or alertaProcessos == True):
+            novasLinhasAlertas.append(dado["df"]["timestamp"],mensagensAlerta)
 
     clientDf = pd.DataFrame(novasLinhas, columns=headersClient)
-
+    
     client_csv_buffer = StringIO()
 
     try:
