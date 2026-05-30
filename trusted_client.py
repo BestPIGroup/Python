@@ -8,6 +8,7 @@ from datetime import datetime
 import boto3
 from botocore.exceptions import ClientError
 import numpy as np
+import json
 
 client = boto3.client("s3")
 
@@ -59,6 +60,7 @@ def lambda_handler(event, context):
 
     paginator = client.get_paginator('list_objects_v2')
     lista_raws = []
+
 
     for page in paginator.paginate(Bucket=bucket, Prefix="raw/"):
 
@@ -117,7 +119,7 @@ def lambda_handler(event, context):
 
     leitura.drop(columns=['virtual_memory_total', 'virtual_memory_available'], inplace=True)
     
-    leitura = leitura.reindex(columns=['user', 'id_mac', 'timestamp', 'cpu_percent', 'cpu_time_user', 'cpu_ctx_switches', 
+    leitura = leitura.reindex(columns=['user', 'id_mac', 'timestamp', 'cpu_percent',                      'cpu_time_user',               'cpu_ctx_switches', 
                                    'top_3_processos_cpu', 'top_3_processos_disco', 'total_processos', 'virtual_memory_usage', 
                                    'disk_read_bytes', 'disk_write_bytes', 'disk_percent', 'net_bytes_recv', 'net_bytes_sent', "net_packets_sent",
                                    'net_packets_recv', 'net_errin', 'net_errout', 'net_dropin', 'net_dropout', 'usuarios_logados',"arquivos_abertos"])
@@ -193,6 +195,8 @@ def lambda_handler(event, context):
 
     linhasClient = []
     novasLinhas = []
+    linhaNomeArquivo = []
+    linhaNomeArquivoDefinida = False
 
     def categorizar(valor):
         if valor == 0:
@@ -204,8 +208,21 @@ def lambda_handler(event, context):
     headersClient = ["idMac","usuarios","timestamp","cpu_percent","cpu_time_user","cpu_ctx_switches","top_3_processos_cpu","top_3_processos_disco","total_processos","virtual_memory_usage","disk_read_kbps","disk_percent","disk_write_kbps","net_kbps_sent","net_kbps_recv","net_packets_sent","net_packets_recv","net_dropin","net_dropout","usuarios_logados","virtual_memory_status","cpu_percent_status","disk_percent_status","net_errors","total_arquivos_abertos","mediana_net_sent","mediana_net_recv"]
 
     novasLinhas = []
+    novasLinhasAlertas = []
 
+    # Variaveis de alertas:
     for dado in dados:
+
+        if linhaNomeArquivoDefinida == False:
+            linhaNomeArquivo = dado
+            linhaNomeArquivoDefinida = True
+
+        alertaRAM = False
+        alertaCPU = False
+        alertaDisco = False
+        alertaProcessos = False
+        alertaRede = False
+        mensagensAlerta = []
         
         moda_sent = dado["df"]["net_kbps_sent"].mode()
         moda_recv = dado["df"]["net_kbps_recv"].mode()
@@ -213,17 +230,57 @@ def lambda_handler(event, context):
         moda_sent = moda_sent.iloc[0] if not moda_sent.empty else 0
         moda_recv = moda_recv.iloc[0] if not moda_recv.empty else 0
 
-        dado["df"]["virtual_memory_status"] = np.where(dado["df"]['virtual_memory_usage'] >= pesquisarComponente("Memoria Usada (%)",dado["mac"]),"Alerta","Normal")
+        ## ALERTAS DE HARDWARE INDIVIDUAIS
+        dado["df"]["virtual_memory_status"] = np.where(dado["df"]['virtual_memory_usage'] >= pesquisarComponente("Memória Usada (%)",dado["mac"]),"Alerta","Normal")
+
+        if(dado["df"]["virtual_memory_status"] == "Alerta"):
+            alertaRAM = True
+            mensagensAlerta.append({"RAM": "Alto uso da RAM"})
+
 
         dado["df"]["cpu_percent_status"] = np.where(dado["df"]['cpu_percent'] >= pesquisarComponente("Uso de CPU (%)",dado["mac"]),"Alerta","Normal")
 
-        dado["df"]["disk_percent_status"] = np.where(dado["df"]["disk_percent"] >= pesquisarComponente("Memoria Usada (%)",dado["mac"]),"Alerta","Normal")
+        if(dado["df"]["cpu_percent_status"] == "Alerta"):
+            alertaCPU = True
+            mensagensAlerta.append({"CPU": "Alto uso da CPU"})
+
+        dado["df"]["cpu_ctx_switches"] = np.where(dado["df"]["cpu_ctx_switches"] >= pesquisarComponente("Troca de contexto (n)", dado["mac"]),"Alerta","Normal")
+
+        if(dado["df"]["cpu_ctx_switches"] == "Alerta"):
+            alertaCtxSwt = True
+            mensagensAlerta.append({"CPU": "Troca alta de contexto na CPU"})
+
+        dado["df"]["disk_percent_status"] = np.where(dado["df"]["disk_percent"] >= pesquisarComponente("Memória Usada (%)",dado["mac"]),"Alerta","Normal")
+
+        if(dado["df"]["disk_percent_status"] == "Alerta"):
+            alertaDisco = True
+            mensagensAlerta.append({"DISCO": "Disco próximo da sua capacidade máxima"})
 
         dado["df"]['net_errors'] = (dado["df"]['net_errin'] + dado["df"]['net_errout'] + dado["df"]['net_dropin'] + dado["df"]['net_dropout']).apply(categorizar)
+
+        if(dado["df"]['net_errors'] == "Alerta"):
+            alertaRede = True
+            mensagensAlerta.append({"REDE": "Requisição negada por motivo desconhecido"})
+
+        ## ALERTAS DE CYBERSEGURANÇA
+        if(alertaCPU and alertaProcessos and alertaCtxSwt):
+            mensagensAlerta.append({"Malware": "Possível ataque de Malware"})
+        
+        if(alertaCPU and alertaDisco):
+            mensagensAlerta.append({"Ransomware": "Possível ataque de Ransomware"})
+
+        ## ADICIONAR IF DE ATAQUE DDOS AQUI
+        
+        if(alertaCPU or alertaDisco or alertaRAM or alertaRede or alertaProcessos or alertaCtxSwt):
+            novasLinhasAlertas.append(dado["df"]["timestamp"],dado["df"]["mac"],mensagensAlerta)
+
+        
+
 
         print(dado["df"]['disk_percent'])
 
         dict_virtual_memory_status = dado["df"]['virtual_memory_status'].value_counts().to_dict()
+        
         str_virtual_memory_status = ", ".join([f"{word}: {count}" for word, count in dict_virtual_memory_status.items()])
 
         dict_cpu_percent_status = dado["df"]['cpu_percent_status'].value_counts().to_dict()
@@ -234,7 +291,8 @@ def lambda_handler(event, context):
         
         dict_net_errors = dado["df"]['net_errors'].value_counts().to_dict()
         str_net_errors = ", ".join([f"{word}: {count}" for word, count in dict_net_errors.items()])
-
+        
+        
         novasLinhas.append([dado["mac"],
                         dado["df"]['user'].unique().tolist(),
                         datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
@@ -262,10 +320,45 @@ def lambda_handler(event, context):
                         dado["df"]["arquivos_abertos"].sum(),
                         moda_sent,
                         moda_recv])
+    
+
+    data_hoje = datetime.now().strftime("%d-%m-%y")
+    aws_alerta_key = f"logAlertas/{data_hoje}_mac_{linhaNomeArquivo[df][mac]}.csv"
+
+    try:
+        alertaGetObj = client.get_object(Bucket=bucket, Key=aws_alerta_key)
+        alerta_existente = pd.read_csv(
+            StringIO(alertaGetObj["Body"].read().decode("utf-8")), 
+            sep=";"
+        )
+        alerta_novo = pd.concat(
+            [alerta_existente, pd.DataFrame([novasLinhasAlertas], columns=alerta_existente.columns)], 
+            ignore_index=True
+        )
+    except client.exceptions.NoSuchKey:
+        alerta_novo = pd.DataFrame([novasLinhasAlertas])
+
+    try:
+        csv_buffer = StringIO()
+        alerta_novo.to_csv(csv_buffer, index=False, sep=";", encoding="utf-8")
+        
+        client.put_object(
+            Bucket=bucket, 
+            Key=aws_alerta_key, 
+            Body=csv_buffer.getvalue()
+        )
+    except Exception as e:
+        print(f"Não foi possível acessar o S3: {e}")
+
+
+
+    alertasDf = pd.DataFrame(novasLinhasAlertas, columns=["Timestamp","Mac Adress","Mensagens Alerta"])
 
     clientDf = pd.DataFrame(novasLinhas, columns=headersClient)
-
+    
     client_csv_buffer = StringIO()
+
+
 
     try:
 
