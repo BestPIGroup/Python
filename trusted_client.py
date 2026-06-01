@@ -289,7 +289,7 @@ def lambda_handler(event, context):
             )
             if (dado["df"]["disk_percent_status"] == "Alerta").any():
                 alertaDisco = True
-                mensagensAlerta.append({"DISCO": "Disco próximo da sua capacidade máxima"})
+                mensagensAlerta.append({"DISCO": "Disco com capacidade exaurida"})
         else:
             dado["df"]["disk_percent_status"] = "Normal"
 
@@ -302,14 +302,14 @@ def lambda_handler(event, context):
 
         if (dado["df"]['net_errors'] == "Alerta").any():
             alertaRede = True
-            mensagensAlerta.append({"REDE": "Requisição negada por motivo desconhecido"})
+            mensagensAlerta.append({"REDE": "Request denied por motivo desconhecido"})
 
         ## ALERTAS DE CYBERSEGURANÇA
         if alertaCPU and alertaProcessos and alertaCtxSwt:
-            mensagensAlerta.append({"Malware": "Possível ataque de Malware"})
+            mensagensAlerta.append({"Malware": "Possibilidade de ataque Malware"})
 
         if alertaCPU and alertaDisco:
-            mensagensAlerta.append({"Ransomware": "Possível ataque de Ransomware"})
+            mensagensAlerta.append({"Ransomware": "Possibilidade de ataque Ransomware"})
 
         ## ADICIONAR IF DE ATAQUE DDOS AQUI
 
@@ -379,7 +379,7 @@ def lambda_handler(event, context):
         )
     except ClientError as e:
         if e.response['Error']['Code'] == "NoSuchKey":
-            alerta_novo = pd.DataFrame(novasLinhasAlertas, columns=["Timestamp", "Mac Adress", "Mensagens Alerta"])
+            alerta_novo = pd.DataFrame(novasLinhasAlertas, columns=["Timestamp", "MacAdress", "MensagensAlerta"])
         else:
             raise
 
@@ -395,7 +395,7 @@ def lambda_handler(event, context):
     except Exception as e:
         print(f"Não foi possível acessar o S3: {e}")
 
-    alertasDf = pd.DataFrame(novasLinhasAlertas, columns=["Timestamp", "Mac Adress", "Mensagens Alerta"])
+    alertasDf = pd.DataFrame(novasLinhasAlertas, columns=["Timestamp", "MacAdress", "MensagensAlerta"])
 
     clientDf = pd.DataFrame(novasLinhas, columns=headersClient)
 
