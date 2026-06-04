@@ -311,7 +311,10 @@ def lambda_handler(event, context):
         if alertaCPU and alertaDisco:
             mensagensAlerta.append({"Ransomware": "Possibilidade de ataque Ransomware"})
 
-        ## ADICIONAR IF DE ATAQUE DDOS AQUI
+        ## ALERTAS DE ATAQUE DDOS
+        if (dado["df"]["net_kbps_sent"].max() - dado["df"]["net_kbps_recv"].max()) > (((dado["df"]["net_kbps_sent"].max() + dado["df"]["net_kbps_recv"].max())/2)*.5 ) or (dado["df"]["net_kbps_recv"].max() - dado["df"]["net_packets_sent"].sum()) > (((dado["df"]["net_kbps_recv"].max() + dado["df"]["net_packets_sent"].sum())/2)*.5):
+            mensagensAlerta.append({"DDOS": "Possibilidade de ataque DDOS"})
+
 
         if alertaCPU or alertaDisco or alertaRAM or alertaRede or alertaProcessos or alertaCtxSwt:
             novasLinhasAlertas.append([
@@ -365,7 +368,7 @@ def lambda_handler(event, context):
         ])
 
     data_hoje = datetime.now().strftime("%d-%m-%y")
-    aws_alerta_key = f"logAlertas/{data_hoje}_mac_{linhaNomeArquivo['mac']}.csv"
+    aws_alerta_key = f"logAlertas/{data_hoje}_{linhaNomeArquivo['mac']}.csv"
 
     try:
         alertaGetObj = cliente_s3.get_object(Bucket=bucket, Key=aws_alerta_key)
