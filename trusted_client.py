@@ -4,7 +4,7 @@ import os
 import math
 from io import StringIO
 import mysql.connector
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import boto3
 from botocore.exceptions import ClientError
 import numpy as np
@@ -340,7 +340,7 @@ def lambda_handler(event, context):
         novasLinhas.append([
             dado["mac"],
             dado["df"]['user'].unique().tolist(),
-            datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
+            datetime.now(timezone(timedelta(hours=-3))).strftime('%d/%m/%Y %H:%M:%S'),
             dado["df"]["cpu_percent"].max(),
             dado["df"]["cpu_time_user"].sum(),
             dado["df"]["cpu_ctx_switches"].sum(),
@@ -367,7 +367,7 @@ def lambda_handler(event, context):
             moda_recv
         ])
 
-    data_hoje = datetime.now().strftime("%d-%m-%y")
+    data_hoje = datetime.now(timezone(timedelta(hours=-3))).strftime("%d-%m-%y")
     aws_alerta_key = f"logAlertas/{data_hoje}_{linhaNomeArquivo['mac']}.csv"
 
     try:
