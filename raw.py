@@ -4,7 +4,7 @@ import csv
 import time
 import boto3
 import os
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from getmac import get_mac_address
 from dotenv import load_dotenv
 
@@ -421,13 +421,13 @@ resultados = {
 
 nome_servidor = psutil.users()[0].name
 mac_servidor = get_mac_address()
-raw_csv = f"{mac_servidor.replace(":","_")}_"+datetime.now().strftime("%Y-%m-%d %H-%M-%S")+".csv"
+raw_csv = f"{mac_servidor.replace(":","_")}_"+datetime.now(timezone(timedelta(hours=-3))).strftime("%Y-%m-%d %H-%M-%S")+".csv"
 
 lista_nomes =[]
 
 def escrita():
 
-    raw_csv = f"{mac_servidor.replace(":","_")}_"+datetime.now().strftime("%Y-%m-%d %H-%M-%S")+".csv"
+    raw_csv = f"{mac_servidor.replace(":","_")}_"+datetime.now(timezone(timedelta(hours=-3))).strftime("%Y-%m-%d %H-%M-%S")+".csv"
 
     for componentes in dados["componentes"]:
             lista_nomes.append(componentes["nome"])
@@ -445,7 +445,7 @@ def escrita():
 
         if os.path.exists(raw_csv) == False:
 
-            raw_csv = f"{mac_servidor.replace(":","_")}_"+datetime.now().strftime("%Y-%m-%d %H-%M-%S")+".csv"
+            raw_csv = f"{mac_servidor.replace(":","_")}_"+datetime.now(timezone(timedelta(hours=-3))).strftime("%Y-%m-%d %H-%M-%S")+".csv"
             with open(raw_csv, mode="w",  newline='', encoding="utf-8") as file:
                 writer = csv.writer(file, delimiter=";")
                 writer.writerow(cabecalho)
@@ -464,7 +464,7 @@ def escrita():
                 resultados[nome] = valor
                 lista_componentes.append(resultados[nome])
 
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            timestamp = datetime.now(timezone(timedelta(hours=-3))).strftime("%Y-%m-%d %H:%M:%S")
 
             registro = [nome_servidor, mac_servidor, timestamp]
             registro.extend(lista_componentes)
