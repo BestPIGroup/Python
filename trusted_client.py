@@ -2,6 +2,7 @@ import pandas as pd
 import csv
 import os
 import math
+import ast  # adicionado para interpretar as listas
 from io import StringIO
 import mysql.connector
 from datetime import datetime
@@ -148,6 +149,8 @@ def lambda_handler(event, context):
     leitura['net_kbps_sent'] = conversao_kb(leitura['net_kbps_sent'] / 5)
     leitura['net_kbps_recv'] = conversao_kb(leitura['net_kbps_recv'] / 5)
 
+    
+
     leitura['timestamp'] = pd.to_datetime(leitura['timestamp'], format='%Y-%m-%d %H:%M:%S')
     leitura['timestamp'] = leitura['timestamp'].dt.strftime('%d/%m/%Y %H:%M:%S')
 
@@ -213,6 +216,33 @@ def lambda_handler(event, context):
             return 'normal'
         else:
             return 'Alerta'
+
+    def top_processos_max_por_mac(df, coluna):
+        todos = []
+        for valor in df[coluna]:
+            if pd.isna(valor) or not isinstance(valor, str):
+                continue
+            try:
+                processos = ast.literal_eval(valor)
+                todos.extend(processos)
+            except (ValueError, SyntaxError):
+                continue
+
+        if not todos:
+            return "[]"
+
+        max_por_pid = {}
+        for pid, nome, uso in todos:
+            chave = (pid, nome)
+            if chave not in max_por_pid or uso > max_por_pid[chave]:
+                max_por_pid[chave] = uso
+
+        top3 = sorted(
+            [[pid, nome, uso] for (pid, nome), uso in max_por_pid.items()],
+            key=lambda x: x[2], reverse=True
+        )[:3]
+
+        return str(top3)
 
     headersClient = [
         "idMac", "usuarios", "timestamp", "cpu_percent", "cpu_time_user", "cpu_ctx_switches",
@@ -334,6 +364,9 @@ def lambda_handler(event, context):
         dict_net_errors = dado["df"]['net_errors'].value_counts().to_dict()
         str_net_errors = ", ".join([f"{palavra}: {contagem}" for palavra, contagem in dict_net_errors.items()])
 
+        top_cpu_str = top_processos_max_por_mac(dado["df"], 'top_3_processos_cpu')
+        top_disco_str = top_processos_max_por_mac(dado["df"], 'top_3_processos_disco')
+
         novasLinhas.append([
             dado["mac"],
             dado["df"]['user'].unique().tolist(),
@@ -341,8 +374,8 @@ def lambda_handler(event, context):
             dado["df"]["cpu_percent"].max(),
             dado["df"]["cpu_time_user"].sum(),
             dado["df"]["cpu_ctx_switches"].sum(),
-            dado["df"]["top_3_processos_cpu"].str.cat(sep=", "),
-            dado["df"]["top_3_processos_disco"].str.cat(sep=", "),
+            top_cpu_str,  
+            top_disco_str, 
             str(dado["df"]["total_processos"].sum()),
             str(dado["df"]["virtual_memory_usage"].max()),
             str(dado["df"]["disk_read_mbps"].max()),
