@@ -271,6 +271,40 @@ def lambda_handler(event, context):
         )[:3]
 
         return str(top3)
+    
+
+    def top_processos_max_por_mac_disco(df, coluna):
+
+        todos = []
+
+        for valor in df[coluna]:
+            if pd.isna(valor) or not isinstance(valor, str):
+                continue
+            try:
+                processos = ast.literal_eval(valor)
+                todos.extend(processos)
+            except (ValueError, SyntaxError):
+                continue
+
+        if not todos:
+            return "[]"
+
+        max_por_pid = {}
+
+        for pid, nome, uso, handles in todos:
+            chave = (pid, nome)
+
+            if chave not in max_por_pid or uso > max_por_pid[chave][0]:
+                max_por_pid[chave] = (uso, handles)
+
+        top3 = sorted(
+            [[pid, nome, uso, handles] for (pid, nome), (uso, handles) in max_por_pid.items()],
+            key=lambda x: x[2],
+            reverse=True
+        )[:3]
+
+        return str(top3)
+            
 
     def calcularScore(linha, limite_cpu, limite_ram, limite_escrita_kb, limite_leitura_kb):
 
@@ -318,6 +352,8 @@ def lambda_handler(event, context):
         alertaProcessos = False
         alertaRede = False
         alertaCtxSwt = False
+        alertaEscrita = False
+        alertaLeitura = False
         mensagensAlerta = []
 
         moda_sent = dado["df"]["net_kbps_sent"].mode()
@@ -442,7 +478,7 @@ def lambda_handler(event, context):
         str_net_errors = ", ".join([f"{palavra}: {contagem}" for palavra, contagem in dict_net_errors.items()])
 
         top_cpu_str = top_processos_max_por_mac(dado["df"], 'top_3_processos_cpu')
-        top_disco_str = top_processos_max_por_mac(dado["df"], 'top_3_processos_disco')
+        top_disco_str = top_processos_max_por_mac_disco(dado["df"], 'top_3_processos_disco')
 
         novasLinhas.append([
             dado["mac"],
