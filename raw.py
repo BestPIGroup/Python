@@ -219,31 +219,40 @@ def coletar_top_3_processos_cpu(parametros):
     time.sleep(0.1)
     processos = list(psutil.process_iter(['pid', 'name', 'cpu_percent']))
     processos_ordenados = sorted(processos, key=lambda p: p.info['cpu_percent'] or 0, reverse=True)
-    matriz_top3 = [[p.info['pid'], p.info['name'], p.info['cpu_percent']] for p in processos_ordenados[:3]]    
+    matriz_top3 = [[p.info['pid'], p.info['name'], p.info['cpu_percent']] for p in processos_ordenados[:3]]
     return matriz_top3
+
 def coletar_top_3_processos_disco(parametros):
-    for p in psutil.process_iter(['io_counters']):
-        p.info['io_counters']
-    time.sleep(0.1)
-    
-    processos = list(psutil.process_iter(['pid', 'name', 'io_counters']))
-    
-    processos_ordenados = sorted(
-        processos, 
-        key=lambda p: p.info['io_counters'].write_bytes if p.info['io_counters'] else 0, 
-        reverse=True
-    )
-    
-    matriz_top3 = [
-        [
-            p.info['pid'], 
-            p.info['name'], 
-            p.info['io_counters'].write_bytes if p.info['io_counters'] else 0
-        ] 
-        for p in processos_ordenados[:3]
-    ]
-    
-    return matriz_top3
+    IGNORAR = {'System'}
+
+    snapshot1 = {}
+    for p in psutil.process_iter(['pid', 'name', 'io_counters']):
+        try:
+            if p.info['name'] not in IGNORAR and p.info['io_counters']:
+                snapshot1[p.info['pid']] = {
+                    'name':        p.info['name'],
+                    'write_bytes': p.info['io_counters'].write_bytes,
+                    'handles':     p.num_handles()
+                }
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+
+    time.sleep(3)
+
+    taxas = []
+    for p in psutil.process_iter(['pid', 'name', 'io_counters']):
+        try:
+            pid = p.info['pid']
+            if p.info['name'] not in IGNORAR and p.info['io_counters'] and pid in snapshot1:
+                delta_write   = p.info['io_counters'].write_bytes - snapshot1[pid]['write_bytes']
+                delta_handles = p.num_handles() - snapshot1[pid]['handles']
+                taxas.append([pid, p.info['name'], delta_write, delta_handles])
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+
+    taxas_ordenadas = sorted(taxas, key=lambda x: x[2], reverse=True)
+    return taxas_ordenadas[:3]
+
 def coletar_usuarios_logados(parametros):
     return round(len(psutil.users()),2)
 def coletar_boot_time(parametros):
@@ -269,16 +278,15 @@ def coletar_bateria_plugada(parametros):
 def coletar_bateria_segundos_restantes(parametros):
     bateria = psutil.sensors_battery()
     return round(bateria.secsleft,2)
-def coletar_arquivos_abertos(parametros):
-    arquivos_abertos_total = 0
-    for proc in psutil.process_iter(['pid', 'name']):
-        try:
-            arquvios_abertos_local = proc.open_files()
-            arquivos_abertos_total += len(arquvios_abertos_local)
-        except (psutil.AccessDenied, psutil.ZombieProcess,psutil.NoSuchProcess):
-            pass
-    
-    return arquivos_abertos_total
+# def coletar_arquivos_abertos(parametros):
+#     arquivos_abertos_total = 0
+#     for proc in psutil.process_iter(['pid', 'name']):
+#         try:
+#             arquvios_abertos_local = proc.open_files()
+#             arquivos_abertos_total += len(arquvios_abertos_local)
+#         except (psutil.AccessDenied, psutil.ZombieProcess,psutil.NoSuchProcess):
+#             pass
+#     return arquivos_abertos_total
 
 coletores = {
 "cpu_percent": coletar_cpu_percent,
@@ -345,8 +353,8 @@ coletores = {
 "total_conexoes": coletar_total_conexoes,
 "bateria_percent": coletar_bateria_percent,
 "bateria_plugada": coletar_bateria_plugada,
-"bateria_segundos_restantes": coletar_bateria_segundos_restantes,
-"arquivos_abertos": coletar_arquivos_abertos
+"bateria_segundos_restantes": coletar_bateria_segundos_restantes
+# "arquivos_abertos": coletar_arquivos_abertos
 }
 
 resultados = {
@@ -414,32 +422,31 @@ resultados = {
 "total_conexoes":"",
 "bateria_percent":"",
 "bateria_plugada":"",
-"bateria_segundos_restantes":"",
-"arquivos_abertos":""
-
+"bateria_segundos_restantes":""
+# "arquivos_abertos":""
 }
 
 nome_servidor = psutil.users()[0].name
 mac_servidor = get_mac_address()
 raw_csv = f"{mac_servidor.replace(":","_")}_"+datetime.now(timezone(timedelta(hours=-3))).strftime("%Y-%m-%d %H-%M-%S")+".csv"
 
-lista_nomes =[]
+lista_nomes = []
 
 def escrita():
 
     raw_csv = f"{mac_servidor.replace(":","_")}_"+datetime.now(timezone(timedelta(hours=-3))).strftime("%Y-%m-%d %H-%M-%S")+".csv"
 
     for componentes in dados["componentes"]:
-            lista_nomes.append(componentes["nome"])
+        lista_nomes.append(componentes["nome"])
 
-    cabecalho=["user", "id_mac", "timestamp"]
+    cabecalho = ["user", "id_mac", "timestamp"]
     cabecalho.extend(lista_nomes)
 
-    with open(raw_csv, mode="w",  newline='', encoding="utf-8") as file:
-            writer = csv.writer(file, delimiter=";")
-            writer.writerow(cabecalho)
+    with open(raw_csv, mode="w", newline='', encoding="utf-8") as file:
+        writer = csv.writer(file, delimiter=";")
+        writer.writerow(cabecalho)
 
-    while (True):    
+    while (True):
 
         print(os.path.exists(raw_csv))
 
@@ -470,25 +477,22 @@ def escrita():
             registro.extend(lista_componentes)
             print(registro)
 
-
-            with open(raw_csv, mode="a",  newline='', encoding="utf-8") as file:
+            with open(raw_csv, mode="a", newline='', encoding="utf-8") as file:
                 writer = csv.writer(file, delimiter=";")
                 writer.writerow(registro)
 
             num_linhas = 0
 
-            with open(raw_csv,"r") as f:
-
+            with open(raw_csv, "r") as f:
                 leitor = csv.reader(f)
                 num_linhas = sum(1 for row in leitor)
 
             if(num_linhas == 11):
-
-                client.upload_file(raw_csv,bucket,f"raw/{raw_csv}")
+                client.upload_file(raw_csv, bucket, f"raw/{raw_csv}")
                 os.remove(raw_csv)
 
             time.sleep(5)
-    
+
 
 ctx_switches_global = psutil.cpu_stats().ctx_switches
 disk_read_bytes_global = psutil.disk_io_counters().read_bytes

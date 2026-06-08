@@ -10,6 +10,7 @@ import boto3
 from botocore.exceptions import ClientError
 import numpy as np
 import json
+import random
 
 cliente_s3 = boto3.client("s3")
 
@@ -68,9 +69,31 @@ def lambda_handler(event, context):
 
     def conversao_kb(valor):
         return round(valor / (1024), 2)
-    
-    def conversao_mb(valor):
-        return round(valor / (1024**2), 2)
+
+    def simular_ransomware(df_mac):
+        df_sim = df_mac.copy()
+        chance = random.random()
+
+        if chance < 0.7:
+            fator_cpu = random.uniform(60.0, 95.0)
+            fator_ram = random.uniform(1.1, 1.5)
+            fator_disco = random.uniform(4.0, 8.0)
+
+            df_sim['cpu_percent'] = (df_sim['cpu_percent'] + fator_cpu).clip(upper=100)
+            df_sim['virtual_memory_usage'] = (df_sim['virtual_memory_usage'] * fator_ram).clip(upper=98)
+            df_sim['disk_write_kbps'] = df_sim['disk_write_kbps'] * fator_disco
+            df_sim['disk_read_kbps'] = df_sim['disk_read_kbps'] * fator_disco
+
+            escrita_simulada = int(df_sim['disk_write_kbps'].iloc[-1] * 1024)
+
+            handles1 = random.randint(800, 1500)
+            handles2 = random.randint(400, 800)
+            handles3 = random.randint(200, 400)
+
+            processo_falso = f"[[9999, 'encrypt.exe', {escrita_simulada}, {handles1}], [9998, 'crypt_worker.exe', {int(escrita_simulada * 0.6)}, {handles2}], [9997, 'file_scan.exe', {int(escrita_simulada * 0.3)}, {handles3}]]"
+            df_sim['top_3_processos_disco'] = processo_falso
+
+        return df_sim
 
     paginador = cliente_s3.get_paginator('list_objects_v2')
     lista_raws = []
@@ -134,25 +157,37 @@ def lambda_handler(event, context):
         'top_3_processos_cpu', 'top_3_processos_disco', 'total_processos', 'virtual_memory_usage',
         'disk_read_bytes', 'disk_write_bytes', 'disk_percent', 'net_bytes_recv', 'net_bytes_sent',
         'net_packets_sent', 'net_packets_recv', 'net_errin', 'net_errout', 'net_dropin',
-        'net_dropout', 'usuarios_logados', 'arquivos_abertos'
+        'net_dropout', 'usuarios_logados'
     ])
 
     leitura.rename(columns={
-        'disk_read_bytes': 'disk_read_mbps',
-        'disk_write_bytes': 'disk_write_mbps',
+        'disk_read_bytes': 'disk_read_kbps',
+        'disk_write_bytes': 'disk_write_kbps',
         'net_bytes_sent': 'net_kbps_sent',
         'net_bytes_recv': 'net_kbps_recv'
     }, inplace=True)
 
-    leitura['disk_read_mbps'] = conversao_mb(leitura['disk_read_mbps'] / 5)
-    leitura['disk_write_mbps'] = conversao_mb(leitura['disk_write_mbps'] / 5)
+    leitura['disk_read_kbps'] = conversao_kb(leitura['disk_read_kbps'] / 5)
+    leitura['disk_write_kbps'] = conversao_kb(leitura['disk_write_kbps'] / 5)
     leitura['net_kbps_sent'] = conversao_kb(leitura['net_kbps_sent'] / 5)
     leitura['net_kbps_recv'] = conversao_kb(leitura['net_kbps_recv'] / 5)
 
-    
-
     leitura['timestamp'] = pd.to_datetime(leitura['timestamp'], format='%Y-%m-%d %H:%M:%S')
     leitura['timestamp'] = leitura['timestamp'].dt.strftime('%d/%m/%Y %H:%M:%S')
+
+    listaMacs = []
+
+    for index, row in leitura.iterrows():
+        if row["id_mac"] not in listaMacs:
+            listaMacs.append(row["id_mac"])
+
+    print(listaMacs)
+
+    for mac in listaMacs:
+        df_mac = leitura[leitura["id_mac"] == mac].copy()
+        df_mac = simular_ransomware(df_mac)
+        colunas_sim = ["cpu_percent", "virtual_memory_usage", "disk_write_kbps", "disk_read_kbps", "top_3_processos_disco"]
+        leitura.loc[leitura["id_mac"] == mac, colunas_sim] = df_mac[colunas_sim].values
 
     buffer_csv_trusted = StringIO()
 
@@ -178,6 +213,8 @@ def lambda_handler(event, context):
 
         if e.response['Error']['Code'] == "NoSuchKey":
 
+            trusted_final = leitura.copy()
+
             leitura.to_csv(buffer_csv_trusted, index=False, sep=";")
 
             cliente_s3.put_object(
@@ -185,15 +222,6 @@ def lambda_handler(event, context):
                 Key="trusted/trusted.csv",
                 Body=buffer_csv_trusted.getvalue()
             )
-
-    listaMacs = []
-
-    for index, row in leitura.iterrows():
-
-        if row["id_mac"] not in listaMacs:
-            listaMacs.append(row["id_mac"])
-
-    print(listaMacs)
 
     dados = []
 
@@ -216,7 +244,7 @@ def lambda_handler(event, context):
             return 'normal'
         else:
             return 'Alerta'
-
+        
     def top_processos_max_por_mac(df, coluna):
         todos = []
         for valor in df[coluna]:
@@ -243,14 +271,73 @@ def lambda_handler(event, context):
         )[:3]
 
         return str(top3)
+    
+
+    def top_processos_max_por_mac_disco(df, coluna):
+
+        todos = []
+
+        for valor in df[coluna]:
+            if pd.isna(valor) or not isinstance(valor, str):
+                continue
+            try:
+                processos = ast.literal_eval(valor)
+                todos.extend(processos)
+            except (ValueError, SyntaxError):
+                continue
+
+        if not todos:
+            return "[]"
+
+        max_por_pid = {}
+
+        for pid, nome, uso, handles in todos:
+            chave = (pid, nome)
+
+            if chave not in max_por_pid or uso > max_por_pid[chave][0]:
+                max_por_pid[chave] = (uso, handles)
+
+        top3 = sorted(
+            [[pid, nome, uso, handles] for (pid, nome), (uso, handles) in max_por_pid.items()],
+            key=lambda x: x[2],
+            reverse=True
+        )[:3]
+
+        return str(top3)
+            
+
+    def calcularScore(linha, limite_cpu, limite_ram, limite_escrita_kb, limite_leitura_kb):
+
+        score = 0
+
+        if limite_cpu and linha["cpu_percent"] > limite_cpu:
+            score += 25
+
+        if limite_ram and linha["virtual_memory_usage"] > limite_ram:
+            score += 25
+
+        if limite_escrita_kb and linha["disk_write_kbps"] > limite_escrita_kb:
+            score += 25
+
+        if limite_leitura_kb and linha["disk_read_kbps"] > limite_leitura_kb:
+            score += 25
+
+        if score >= 75:
+            nivel = "ALTO"
+        elif score >= 25:
+            nivel = "MEDIO"
+        else:
+            nivel = "BAIXO"
+
+        return score, nivel
 
     headersClient = [
         "idMac", "usuarios", "timestamp", "cpu_percent", "cpu_time_user", "cpu_ctx_switches",
         "top_3_processos_cpu", "top_3_processos_disco", "total_processos", "virtual_memory_usage",
-        "disk_read_mbps", "disk_percent", "disk_write_mbps", "net_kbps_sent", "net_kbps_recv",
+        "disk_read_kbps", "disk_percent", "disk_write_kbps", "net_kbps_sent", "net_kbps_recv",
         "net_packets_sent", "net_packets_recv", "net_dropin", "net_dropout", "usuarios_logados",
         "virtual_memory_status", "cpu_percent_status", "disk_percent_status", "net_errors",
-        "total_arquivos_abertos", "mediana_net_sent", "mediana_net_recv"
+        "mediana_net_sent", "mediana_net_recv"
     ]
 
     for dado in dados:
@@ -265,6 +352,8 @@ def lambda_handler(event, context):
         alertaProcessos = False
         alertaRede = False
         alertaCtxSwt = False
+        alertaEscrita = False
+        alertaLeitura = False
         mensagensAlerta = []
 
         moda_sent = dado["df"]["net_kbps_sent"].mode()
@@ -323,6 +412,28 @@ def lambda_handler(event, context):
         else:
             dado["df"]["disk_percent_status"] = "Normal"
 
+        limiteEscrita = pesquisarComponente("Escrita em Disco (KB/s)", dado["mac"])
+        if limiteEscrita is not None:
+            dado["df"]["disk_write_status"] = np.where(
+                dado["df"]["disk_write_kbps"] >= limiteEscrita,
+                "Alerta", "Normal"
+            )
+            alertaEscrita = (dado["df"]["disk_write_status"] == "Alerta").any()
+        else:
+            dado["df"]["disk_write_status"] = "Normal"
+            alertaEscrita = False
+
+        limiteLeitura = pesquisarComponente("Leitura em Disco (KB/s)", dado["mac"])
+        if limiteLeitura is not None:
+            dado["df"]["disk_read_status"] = np.where(
+                dado["df"]["disk_read_kbps"] >= limiteLeitura,
+                "Alerta", "Normal"
+            )
+            alertaLeitura = (dado["df"]["disk_read_status"] == "Alerta").any()
+        else:
+            dado["df"]["disk_read_status"] = "Normal"
+            alertaLeitura = False
+
         dado["df"]['net_errors'] = (
             dado["df"]['net_errin'] +
             dado["df"]['net_errout'] +
@@ -338,13 +449,12 @@ def lambda_handler(event, context):
         if alertaCPU and alertaProcessos and alertaCtxSwt:
             mensagensAlerta.append({"Malware": "Possibilidade de ataque Malware"})
 
-        if alertaCPU and alertaDisco:
+        if alertaCPU and (alertaEscrita or alertaLeitura):
             mensagensAlerta.append({"Ransomware": "Possibilidade de ataque Ransomware"})
 
         ## ALERTAS DE ATAQUE DDOS
         if (dado["df"]["net_kbps_sent"].max() - dado["df"]["net_kbps_recv"].max()) > (((dado["df"]["net_kbps_sent"].max() + dado["df"]["net_kbps_recv"].max())/2)*.5 ) or (dado["df"]["net_kbps_recv"].max() - dado["df"]["net_packets_sent"].sum()) > (((dado["df"]["net_kbps_recv"].max() + dado["df"]["net_packets_sent"].sum())/2)*.5):
             mensagensAlerta.append({"DDOS": "Possibilidade de ataque DDOS"})
-
 
         if alertaCPU or alertaDisco or alertaRAM or alertaRede or alertaProcessos or alertaCtxSwt:
             novasLinhasAlertas.append([
@@ -368,7 +478,7 @@ def lambda_handler(event, context):
         str_net_errors = ", ".join([f"{palavra}: {contagem}" for palavra, contagem in dict_net_errors.items()])
 
         top_cpu_str = top_processos_max_por_mac(dado["df"], 'top_3_processos_cpu')
-        top_disco_str = top_processos_max_por_mac(dado["df"], 'top_3_processos_disco')
+        top_disco_str = top_processos_max_por_mac_disco(dado["df"], 'top_3_processos_disco')
 
         novasLinhas.append([
             dado["mac"],
@@ -381,9 +491,9 @@ def lambda_handler(event, context):
             top_disco_str, 
             str(dado["df"]["total_processos"].sum()),
             str(dado["df"]["virtual_memory_usage"].max()),
-            str(dado["df"]["disk_read_mbps"].max()),
+            str(dado["df"]["disk_read_kbps"].max()),
             str(dado["df"]['disk_percent'].max()),
-            str(dado["df"]["disk_write_mbps"].max()),
+            str(dado["df"]["disk_write_kbps"].max()),
             str(dado["df"]["net_kbps_sent"].max()),
             str(dado["df"]["net_kbps_recv"].max()),
             dado["df"]["net_packets_sent"].sum(),
@@ -395,7 +505,6 @@ def lambda_handler(event, context):
             str_cpu_percent_status,
             str_disk_percent_status,
             str_net_errors,
-            dado["df"]["arquivos_abertos"].sum(),
             moda_sent,
             moda_recv
         ])
@@ -466,6 +575,93 @@ def lambda_handler(event, context):
                 Key="client/client.csv",
                 Body=buffer_csv_client.getvalue()
             )
+
+    dadosRansomware = {}
+
+    trusted_final['timestamp'] = pd.to_datetime(trusted_final['timestamp'], format='%d/%m/%Y %H:%M:%S')
+
+    for dado in dados:
+
+        mac = dado["mac"]
+
+        df_mac = trusted_final[trusted_final["id_mac"] == mac].copy()
+
+        ultimo_timestamp = df_mac["timestamp"].max()
+        df_mac = df_mac[df_mac["timestamp"] >= (ultimo_timestamp - pd.Timedelta(days=1))]
+
+        df_mac['timestamp'] = df_mac['timestamp'].dt.strftime('%d/%m/%Y %H:%M:%S')
+
+        df_mac['timestamp_dt'] = pd.to_datetime(df_mac['timestamp'], format='%d/%m/%Y %H:%M:%S')
+        df_mac['timestamp_5min'] = df_mac['timestamp_dt'].dt.floor('5min')
+
+        df_historico = df_mac.groupby('timestamp_5min', as_index=False).agg({
+            'cpu_percent':          'max',
+            'virtual_memory_usage': 'max',
+            'disk_write_kbps':      'max',
+            'disk_read_kbps':       'max',
+            'total_processos':      'last',
+        })
+
+        df_historico['timestamp'] = df_historico['timestamp_5min'].dt.strftime('%d/%m/%Y %H:%M:%S')
+
+        limite_cpu        = pesquisarComponente("Uso de CPU (%)", mac)
+        limite_ram        = pesquisarComponente("Memoria Usada (%)", mac)
+        limite_escrita_kb = pesquisarComponente("Escrita em Disco (KB/s)", mac)
+        limite_leitura_kb = pesquisarComponente("Leitura em Disco (KB/s)", mac)
+
+        ultima = df_mac.iloc[-1]
+
+        maior_escrita = df_mac.loc[df_mac["disk_write_kbps"].idxmax()]
+
+        score, nivel = calcularScore(ultima, limite_cpu, limite_ram, limite_escrita_kb, limite_leitura_kb)
+
+        historico = []
+
+        for _, linha in df_historico.iterrows():
+
+            s, n = calcularScore(linha, limite_cpu, limite_ram, limite_escrita_kb, limite_leitura_kb)
+
+            historico.append({
+                "timestamp":            str(linha["timestamp"]),
+                "cpu_percent":          round(float(linha["cpu_percent"]), 2),
+                "virtual_memory_usage": round(float(linha["virtual_memory_usage"]), 2),
+                "disk_write_kbps":      round(float(linha["disk_write_kbps"]), 2),
+                "disk_read_kbps":       round(float(linha["disk_read_kbps"]), 2),
+                "score":                s,
+                "nivel":                n,
+            })
+
+        dadosRansomware[mac] = {
+            "mac":                   mac,
+            "ultima_atualizacao":    datetime.now(timezone(timedelta(hours=-3))).strftime('%d/%m/%Y %H:%M:%S'),
+            "timestamp_leitura":     str(ultima["timestamp"]),
+            "score":                 score,
+            "nivel":                 nivel,
+            "cpu_percent":           round(float(ultima["cpu_percent"]), 2),
+            "virtual_memory_usage":  round(float(ultima["virtual_memory_usage"]), 2),
+            "disk_write_kbps":       round(float(ultima["disk_write_kbps"]), 2),
+            "disk_read_kbps":        round(float(ultima["disk_read_kbps"]), 2),
+            "disk_percent":          round(float(ultima["disk_percent"]), 2),
+            "top_3_processos_disco": str(maior_escrita["top_3_processos_disco"]),
+            "limites": {
+                "cpu":        limite_cpu,
+                "ram":        limite_ram,
+                "escrita_kb": limite_escrita_kb,
+                "leitura_kb": limite_leitura_kb,
+            },
+            "historico": historico,
+        }
+
+    ransomware_buffer = json.dumps(dadosRansomware, ensure_ascii=False, indent=2)
+
+    cliente_s3.put_object(
+        Bucket=bucket,
+        Key="client/ransomware.json",
+        Body=ransomware_buffer.encode("utf-8"),
+        ContentType="application/json",
+    )
+
+    print("ransomware.json salvo e enviado ao S3 client/")
 
     return {
         "statusCode": 200,
