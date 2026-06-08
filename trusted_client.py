@@ -74,7 +74,7 @@ def lambda_handler(event, context):
         df_sim = df_mac.copy()
         chance = random.random()
 
-        if chance < 0.7:
+        if chance < 0.3:
             fator_cpu = random.uniform(60.0, 95.0)
             fator_ram = random.uniform(1.1, 1.5)
             fator_disco = random.uniform(4.0, 8.0)
@@ -84,7 +84,7 @@ def lambda_handler(event, context):
             df_sim['disk_write_kbps'] = df_sim['disk_write_kbps'] * fator_disco
             df_sim['disk_read_kbps'] = df_sim['disk_read_kbps'] * fator_disco
 
-            escrita_simulada = int(df_sim['disk_write_kbps'].iloc[-1] * 1024)
+            escrita_simulada = int(df_sim['disk_write_kbps'].iloc[-1])
 
             handles1 = random.randint(800, 1500)
             handles2 = random.randint(400, 800)
@@ -160,17 +160,28 @@ def lambda_handler(event, context):
         'net_dropout', 'usuarios_logados'
     ])
 
-    leitura.rename(columns={
-        'disk_read_bytes': 'disk_read_kbps',
-        'disk_write_bytes': 'disk_write_kbps',
-        'net_bytes_sent': 'net_kbps_sent',
-        'net_bytes_recv': 'net_kbps_recv'
-    }, inplace=True)
+    leitura['disk_read_kbps'] = leitura['disk_read_bytes'] / 1024 / 5
+    leitura['disk_write_kbps'] = leitura['disk_write_bytes'] / 1024 / 5
+    leitura['net_kbps_sent'] = leitura['net_bytes_sent'] / 1024 / 5
+    leitura['net_kbps_recv'] = leitura['net_bytes_recv'] / 1024 / 5
 
-    leitura['disk_read_kbps'] = conversao_kb(leitura['disk_read_kbps'] / 5)
-    leitura['disk_write_kbps'] = conversao_kb(leitura['disk_write_kbps'] / 5)
-    leitura['net_kbps_sent'] = conversao_kb(leitura['net_kbps_sent'] / 5)
-    leitura['net_kbps_recv'] = conversao_kb(leitura['net_kbps_recv'] / 5)
+    leitura.drop(columns=[
+        'disk_read_bytes',
+        'disk_write_bytes',
+        'net_bytes_sent',
+        'net_bytes_recv'
+    ], inplace=True)
+
+    def converter_processos_disco_para_kb(texto):
+        if pd.isna(texto) or not isinstance(texto, str):
+            return texto
+        try:
+            processos = ast.literal_eval(texto)
+            return str([[pid, nome, round(b, 2), h] for pid, nome, b, h in processos])
+        except:
+            return texto
+
+    leitura['top_3_processos_disco'] = leitura['top_3_processos_disco'].apply(converter_processos_disco_para_kb)
 
     leitura['timestamp'] = pd.to_datetime(leitura['timestamp'], format='%Y-%m-%d %H:%M:%S')
     leitura['timestamp'] = leitura['timestamp'].dt.strftime('%d/%m/%Y %H:%M:%S')
@@ -180,8 +191,6 @@ def lambda_handler(event, context):
     for index, row in leitura.iterrows():
         if row["id_mac"] not in listaMacs:
             listaMacs.append(row["id_mac"])
-
-    print(listaMacs)
 
     for mac in listaMacs:
         df_mac = leitura[leitura["id_mac"] == mac].copy()
@@ -611,7 +620,19 @@ def lambda_handler(event, context):
 
         ultima = df_mac.iloc[-1]
 
-        maior_escrita = df_mac.loc[df_mac["disk_write_kbps"].idxmax()]
+            
+        print("KPI:", ultima["disk_write_kbps"])
+
+        print("TOP PROCESSOS:")
+        print(top_processos_max_por_mac_disco(
+            dado["df"],
+            "top_3_processos_disco"
+        ))
+
+        print("ULTIMAS ESCRITAS:")
+        print(df_mac[["timestamp", "disk_write_kbps"]].tail())
+
+        # maior_escrita = dado["df"].loc[dado["df"]["disk_write_kbps"].idxmax()]
 
         score, nivel = calcularScore(ultima, limite_cpu, limite_ram, limite_escrita_kb, limite_leitura_kb)
 
@@ -642,7 +663,7 @@ def lambda_handler(event, context):
             "disk_write_kbps":       round(float(ultima["disk_write_kbps"]), 2),
             "disk_read_kbps":        round(float(ultima["disk_read_kbps"]), 2),
             "disk_percent":          round(float(ultima["disk_percent"]), 2),
-            "top_3_processos_disco": str(maior_escrita["top_3_processos_disco"]),
+            "top_3_processos_disco": top_processos_max_por_mac_disco(dado["df"], "top_3_processos_disco"),
             "limites": {
                 "cpu":        limite_cpu,
                 "ram":        limite_ram,
