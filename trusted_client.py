@@ -337,7 +337,7 @@ def lambda_handler(event, context):
         "disk_read_kbps", "disk_percent", "disk_write_kbps", "net_kbps_sent", "net_kbps_recv",
         "net_packets_sent", "net_packets_recv", "net_dropin", "net_dropout", "usuarios_logados",
         "virtual_memory_status", "cpu_percent_status", "disk_percent_status", "net_errors",
-        "mediana_net_sent", "mediana_net_recv"
+        "mediana_vel_sent", "mediana_vel_recv"
     ]
 
     for dado in dados:
@@ -356,8 +356,8 @@ def lambda_handler(event, context):
         alertaLeitura = False
         mensagensAlerta = []
 
-        moda_sent = dado["df"]["net_kbps_sent"].mode()
-        moda_recv = dado["df"]["net_kbps_recv"].mode()
+        moda_sent = dado["df"]["net_kbps_sent"].median()
+        moda_recv = dado["df"]["net_kbps_recv"].median()
 
         moda_sent = moda_sent.iloc[0] if not moda_sent.empty else 0
         moda_recv = moda_recv.iloc[0] if not moda_recv.empty else 0

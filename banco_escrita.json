@@ -128,12 +128,6 @@
       "biblioteca": "psutil",
       "parametros": {},
       "servidor_id_servidor": 1
-    },{"nome": "arquivos_abertos",
-      "tipo": "user",
-      "unidade_medida": "contagem",
-      "biblioteca": "psutil",
-      "parametros": {},
-      "servidor_id_servidor": 1
     }
   ]
 }
