@@ -219,7 +219,7 @@ def coletar_top_3_processos_cpu(parametros):
     time.sleep(0.1)
     processos = list(psutil.process_iter(['pid', 'name', 'cpu_percent']))
     processos_ordenados = sorted(processos, key=lambda p: p.info['cpu_percent'] or 0, reverse=True)
-    matriz_top3 = [[p.info['pid'], p.info['name'], p.info['cpu_percent']] for p in processos_ordenados[:3]]
+    matriz_top3 = [[p.info['pid'], p.info['name'], p.info['cpu_percent']/coletar_cpu_count_logical("")] for p in processos_ordenados[:3]]
     return matriz_top3
 
 def coletar_top_3_processos_disco(parametros):
