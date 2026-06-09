@@ -220,9 +220,11 @@ def lambda_handler(event, context):
         "disk_read_mbps", "disk_percent", "disk_write_mbps", "net_kbps_sent", "net_kbps_recv",
         "net_packets_sent", "net_packets_recv", "net_dropin", "net_dropout", "usuarios_logados",
         "virtual_memory_status", "cpu_percent_status", "disk_percent_status", "net_errors",
-        "total_arquivos_abertos", "mediana_net_sent", "mediana_net_recv"
+        "total_arquivos_abertos", "mediana_net_sent", "mediana_net_recv", "ligacoes"
     ]
 
+    calc_ligacoes = 0;
+    
     for dado in dados:
 
         if linhaNomeArquivoDefinida == False:
@@ -337,6 +339,46 @@ def lambda_handler(event, context):
         dict_net_errors = dado["df"]['net_errors'].value_counts().to_dict()
         str_net_errors = ", ".join([f"{palavra}: {contagem}" for palavra, contagem in dict_net_errors.items()])
 
+        if datetime.now().hour >= 1 and datetime.now().hour < 5 and datetime.now().month >= 1 and datetime.now().month <= 3:
+            calc_ligacoes += np.random.normal(loc=0.11, scale=0.1)
+        elif datetime.now().hour >= 5 and datetime.now().hour < 9 and datetime.now().month >= 1 and datetime.now().month <= 3:
+            calc_ligacoes += np.random.normal(loc=0.45, scale=0.1)
+        elif datetime.now().hour >= 9 and datetime.now().hour < 18 and datetime.now().month >= 1 and datetime.now().month <= 3:
+            calc_ligacoes += np.random.normal(loc=0.4, scale=0.1)
+        elif datetime.now().hour >= 18 and datetime.now().hour < 23 and datetime.now().month >= 1 and datetime.now().month <= 3:
+            calc_ligacoes += np.random.normal(loc=0.3, scale=0.1)
+        else:
+            calc_ligacoes += np.random.normal(loc=0.09, scale=0.1)
+
+        if datetime.now().hour >= 1 and datetime.now().hour < 5 and datetime.now().month >= 4 and datetime.now().month <= 10:
+            calc_ligacoes += np.random.normal(loc=0.07, scale=0.1)
+        elif datetime.now().hour >= 5 and datetime.now().hour < 9 and datetime.now().month >= 4 and datetime.now().month <= 10:
+            calc_ligacoes += np.random.normal(loc=0.32, scale=0.1)
+        elif datetime.now().hour >= 9 and datetime.now().hour < 18 and datetime.now().month >= 4 and datetime.now().month <= 10:
+            calc_ligacoes += np.random.normal(loc=0.36, scale=0.1)
+        elif datetime.now().hour >= 18 and datetime.now().hour < 23 and datetime.now().month >= 4 and datetime.now().month <= 10:
+            calc_ligacoes += np.random.normal(loc=0.23, scale=0.1)
+        else:
+            calc_ligacoes += np.random.normal(loc=0.07, scale=0.1)
+
+        if datetime.now().hour >= 1 and datetime.now().hour < 5 and datetime.now().month >= 11 and datetime.now().month <= 12:
+            calc_ligacoes += np.random.normal(loc=0.13, scale=0.1)
+        elif datetime.now().hour >= 5 and datetime.now().hour < 9 and datetime.now().month >= 11 and datetime.now().month <= 12:
+            calc_ligacoes += np.random.normal(loc=0.43, scale=0.1)
+        elif datetime.now().hour >= 9 and datetime.now().hour < 18 and datetime.now().month >= 11 and datetime.now().month <= 12:
+            calc_ligacoes += np.random.normal(loc=0.44, scale=0.1)
+        elif datetime.now().hour >= 18 and datetime.now().hour < 23 and datetime.now().month >= 11 and datetime.now().month <= 12:
+            calc_ligacoes += np.random.normal(loc=0.35, scale=0.1)
+        else:
+            calc_ligacoes += np.random.normal(loc=0.13, scale=0.1)      
+
+            if calc_ligacoes >= 1:
+                calc_ligacoes -= 1
+                ligacoes = 1
+            else:
+                ligacoes = 0
+
+
         novasLinhas.append([
             dado["mac"],
             dado["df"]['user'].unique().tolist(),
@@ -364,7 +406,8 @@ def lambda_handler(event, context):
             str_net_errors,
             dado["df"]["arquivos_abertos"].sum(),
             moda_sent,
-            moda_recv
+            moda_recv,
+            ligacoes
         ])
 
     data_hoje = datetime.now().strftime("%d-%m-%y")
