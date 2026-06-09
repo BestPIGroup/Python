@@ -428,13 +428,13 @@ resultados = {
 
 nome_servidor = psutil.users()[0].name
 mac_servidor = get_mac_address()
-raw_csv = f"{mac_servidor.replace(":","_")}_"+datetime.now(timezone(timedelta(hours=-3))).strftime("%Y-%m-%d %H-%M-%S")+".csv"
+raw_csv = f"{mac_servidor.replace(':','_')}_"+datetime.now(timezone(timedelta(hours=-3))).strftime("%Y-%m-%d %H-%M-%S")+".csv"
 
 lista_nomes = []
 
 def escrita():
 
-    raw_csv = f"{mac_servidor.replace(":","_")}_"+datetime.now(timezone(timedelta(hours=-3))).strftime("%Y-%m-%d %H-%M-%S")+".csv"
+    raw_csv = f"{mac_servidor.replace(':','_')}_"+datetime.now(timezone(timedelta(hours=-3))).strftime("%Y-%m-%d %H-%M-%S")+".csv"
 
     for componentes in dados["componentes"]:
         lista_nomes.append(componentes["nome"])
@@ -452,7 +452,7 @@ def escrita():
 
         if os.path.exists(raw_csv) == False:
 
-            raw_csv = f"{mac_servidor.replace(":","_")}_"+datetime.now(timezone(timedelta(hours=-3))).strftime("%Y-%m-%d %H-%M-%S")+".csv"
+            raw_csv = f"{mac_servidor.replace(':','_')}_"+datetime.now(timezone(timedelta(hours=-3))).strftime("%Y-%m-%d %H-%M-%S")+".csv"
             with open(raw_csv, mode="w",  newline='', encoding="utf-8") as file:
                 writer = csv.writer(file, delimiter=";")
                 writer.writerow(cabecalho)
