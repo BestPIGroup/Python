@@ -403,7 +403,7 @@ resultados = {
 "net_bytes_sent_gb":"",
 "net_bytes_sent":"",
 "net_bytes_recv_gb":"",
-"net_bytes_recv ":"",
+"net_bytes_recv":"",
 "net_packets_sent":"",
 "net_packets_recv":"",
 "net_errin":"",
